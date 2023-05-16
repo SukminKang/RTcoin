@@ -1980,14 +1980,7 @@ namespace CryptoNote
 
         height = getTopBlockIndex() + 1;
         difficulty = getDifficultyForNextBlock();
-        isEmpty = (transactionPool->getTransactionCount == 0);
-
-        if (isEmpty)
-        {
-            std::string error = "Transaction pool is empty.";
-            logger(Logging::ERROR, Logging::BRIGHT_RED) << error;
-            return {true, error};
-        }
+        isEmpty = (transactionPool->getTransactionCount() == 0);
 
         if (height >= CryptoNote::parameters::CRYPTONOTE_STOP_BLOCK_NUMBER)
         {
