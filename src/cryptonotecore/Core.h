@@ -187,6 +187,7 @@ namespace CryptoNote
             const Crypto::PublicKey &publicSpendKey,
             const BinaryArray &extraNonce,
             uint64_t &difficulty,
+            bool &isEmpty,
             uint32_t &height) override;
 
         virtual CoreStatistics getCoreStatistics() const override;

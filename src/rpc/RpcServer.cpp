@@ -1010,11 +1010,12 @@ std::tuple<Error, uint16_t>
     blobReserve.resize(reserveSize, 0);
 
     uint64_t difficulty;
+    bool isEmpty;
 
     uint32_t height;
 
     const auto [success, error] =
-        m_core->getBlockTemplate(blockTemplate, publicViewKey, publicSpendKey, blobReserve, difficulty, height);
+        m_core->getBlockTemplate(blockTemplate, publicViewKey, publicSpendKey, blobReserve, difficulty, isEmpty, height);
 
     if (!success)
     {
@@ -1055,6 +1056,9 @@ std::tuple<Error, uint16_t>
     {
         writer.Key("difficulty");
         writer.Uint64(difficulty);
+
+        writer.Key("isEmpty");
+        writer.Bool(isEmpty);
 
         writer.Key("height");
         writer.Uint(height);
@@ -1110,6 +1114,7 @@ std::tuple<Error, uint16_t>
 
         newBlockMessage.current_blockchain_height = m_core->getTopBlockIndex() + 1;
 
+        //RTcoin
         m_syncManager->relayBlock(newBlockMessage);
 
         const CryptoNote::CachedBlock block(blockTemplate);

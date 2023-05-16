@@ -81,15 +81,15 @@ namespace Miner
 
     void MinerManager::start()
     {
-        CryptoNote::BlockMiningParameters params = requestMiningParameters();
-        adjustBlockTemplate(params.blockTemplate);
+        //CryptoNote::BlockMiningParameters params = requestMiningParameters();
+        //adjustBlockTemplate(params.blockTemplate);
 
         isRunning = true;
 
-        startBlockchainMonitoring();
+        //startBlockchainMonitoring();
         std::thread reporter(std::bind(&MinerManager ::printHashRate, this));
         startBlockchainChecker();
-        startMining(params);
+        //startMining(params);
 
         eventLoop();
         isRunning = false;
@@ -128,13 +128,17 @@ namespace Miner
                     CryptoNote::BlockMiningParameters params = requestMiningParameters();
                     adjustBlockTemplate(params.blockTemplate);
 
-                    startBlockchainMonitoring();
-                    startMining(params);
+                    if (!params.isEmpty)
+                    {
+                        //startBlockchainMonitoring();
+                        startMining(params);
+                    }
+                    
                     break;
                 }
                 case MinerEventType::BLOCK_MINED:
                 {
-                    stopBlockchainMonitoring();
+                    //stopBlockchainMonitoring();
                     
                     if (submitBlock(m_minedBlock))
                     {
@@ -148,13 +152,19 @@ namespace Miner
                         }
                     }
 
-                    //CryptoNote::BlockMiningParameters params = requestMiningParameters();
-                    //adjustBlockTemplate(params.blockTemplate);
+                    CryptoNote::BlockMiningParameters params = requestMiningParameters();
+                    adjustBlockTemplate(params.blockTemplate);
+
+                    if (!params.isEmpty)
+                    {
+                        startMining(params);
+                    }
 
                     //startBlockchainMonitoring();
                     //startMining(params);
                     break;
                 }
+                /*
                 case MinerEventType::BLOCKCHAIN_UPDATED:
                 {
                     stopMining();
@@ -165,6 +175,7 @@ namespace Miner
                     startMining(params);
                     break;
                 }
+                */
             }
         }
     }
@@ -217,6 +228,8 @@ namespace Miner
             {
                 try
                 {
+                    pushEvent(BlockMineStartEvent());
+                    
                     while (1)
                     {
                         m_blockchainChecker.waitBlockchainCheckerExpired();

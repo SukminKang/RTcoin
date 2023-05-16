@@ -173,7 +173,7 @@ namespace CryptoNote
 
         static_assert(2 * DIFFICULTY_CUT <= DIFFICULTY_WINDOW - 2, "Bad DIFFICULTY_WINDOW or DIFFICULTY_CUT");
 
-        const size_t MAX_BLOCK_SIZE_INITIAL = 100'000;
+        const size_t MAX_BLOCK_SIZE_INITIAL = (1024 * 1024);
 
         const uint64_t MAX_BLOCK_SIZE_GROWTH_SPEED_NUMERATOR = 100 * 1024;
 

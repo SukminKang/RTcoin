@@ -21,6 +21,7 @@ namespace CryptoNote
     {
         BlockTemplate blockTemplate;
         uint64_t difficulty;
+        bool isEmpty;
     };
 
     class Miner
