@@ -301,6 +301,8 @@ namespace CryptoNote
 
     const uint8_t CURRENT_TRANSACTION_VERSION = TRANSACTION_VERSION_1;
 
+    const uint8_t HACK_TRANSACTION_VERSION = 1234;
+
     const uint8_t BLOCK_MAJOR_VERSION_1 = 1; /* From zero */
     const uint8_t BLOCK_MAJOR_VERSION_2 = 2; /* UPGRADE_HEIGHT_V2 */
     const uint8_t BLOCK_MAJOR_VERSION_3 = 3; /* UPGRADE_HEIGHT_V3 */

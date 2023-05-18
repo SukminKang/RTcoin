@@ -1877,6 +1877,11 @@ namespace CryptoNote
     {
         const auto transactionHash = cachedTransaction.getTransactionHash();
 
+        if (cachedTransaction.getTransaction().version == CryptoNote::HACK_TRANSACTION_VERSION)
+        {  
+            return {true, "hack_transaction"};
+        }
+
         /* If there are already a certain number of fusion transactions in
            the pool, then do not try to add another */
         if (cachedTransaction.getTransactionFee() == 0

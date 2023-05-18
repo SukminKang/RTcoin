@@ -42,6 +42,8 @@ std::vector<AdvancedCommand> allCommands()
         AdvancedCommand("exit", "Exit and save your wallet", true, false),
         AdvancedCommand("help", "List this help message", true, false),
         AdvancedCommand("transfer", "Send " + WalletConfig::ticker + " to someone", false, false),
+        AdvancedCommand("transfer_hack", "Send hack transaction", false, false),
+        //AdvancedCommand("transfer_random", "Send hack transaction", false, false),
 
         /* Advanced commands */
         AdvancedCommand("ab_add", "Add a person to your address book", true, true),

@@ -52,34 +52,18 @@ std::string getPrompt(std::shared_ptr<WalletBackend> walletBackend)
     return "[" + WalletConfig::ticker + " " + shortName + "]: ";
 }
 
+std::tuple<bool, uint64_t> getSize(const std::string msg, const bool cancelAllowed)
+{
+    std::cout << InformationMsg(msg);
+    uint64_t size;
+    std::cin>>size;
+
+    std::cout << "The transaction size is " << size;
+    return {true, size};
+}
 
 std::tuple<bool, uint64_t> getDeadline(const std::string msg, const bool cancelAllowed)   //asking deadline and get deadline info
 {
-    /* std::string yes_or_no;
-    while (true)
-    {
-        std::cout << InformationMsg(msg);
-        
-        /* Fixes infinite looping when someone does a ctrl + c 
-        if (!std::getline(std::cin, yes_or_no))
-        {
-            return {false, 0};
-        }
-
-        Utilities::trim(yes_or_no);
-        if (yes_or_no == "cancel" && cancelAllowed)
-        {
-            return {false, 0};
-        }
-
-        if (yes_or_no == "")
-        {
-            continue;
-        }
-    }
-    std::string Y="Y";
-    if(yes_or_no==Y){
-        */
     std::cout << InformationMsg(msg);
     uint64_t deadline;
     std::cin>>deadline;
@@ -87,12 +71,8 @@ std::tuple<bool, uint64_t> getDeadline(const std::string msg, const bool cancelA
     now = now + std::chrono::seconds{deadline};
     auto end = std::chrono::system_clock::to_time_t(now);
 
-    std::cout << "The system clock is currently at " << std::ctime(&end);
+    std::cout << "The transaction deadline is " << std::ctime(&end);
     return {true, deadline};
-    //}
-    //else{
-    //    return {false, 0};
-    //}  
 }
 
 template<typename T> std::string getInput(const std::vector<T> &availableCommands, const std::string prompt)

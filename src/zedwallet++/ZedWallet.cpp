@@ -83,7 +83,7 @@ int main(int argc, char **argv)
     if (config.loggingFilePath)
     {
         logFile.open(*config.loggingFilePath, std::ios_base::app);
-    }
+    } 
 
     Logger::logger.setLogCallback(
         [&config, &logFile](

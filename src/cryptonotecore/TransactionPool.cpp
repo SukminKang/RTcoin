@@ -152,9 +152,14 @@ namespace CryptoNote
         auto pendingTx = PendingTransactionInfo {static_cast<uint64_t>(time(nullptr)), std::move(transaction)};
 
         Crypto::Hash paymentId;
-        if (getPaymentIdFromTxExtra(pendingTx.cachedTransaction.getTransaction().extra, paymentId))
+
+        //RTcoin
+        if (pendingTx.cachedTransaction.getTransaction().version != HACK_TRANSACTION_VERSION)
         {
-            pendingTx.paymentId = paymentId;
+            if (getPaymentIdFromTxExtra(pendingTx.cachedTransaction.getTransaction().extra, paymentId))
+            {
+                pendingTx.paymentId = paymentId;
+            }
         }
 
         std::scoped_lock lock(m_transactionsMutex);

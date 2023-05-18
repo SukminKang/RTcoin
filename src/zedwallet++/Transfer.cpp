@@ -23,6 +23,21 @@ namespace
     }
 } // namespace
 
+void transfer_hack(const std::shared_ptr<WalletBackend> walletBackend, const bool sendAll)
+{
+    std::cout << InformationMsg("Note: You can generate test transactions on any size and deadline\n\n");
+
+    uint64_t deadline;
+    uint64_t size;
+    bool success;
+    bool cancelAllowed = false;
+
+    std::tie(success, size) = getSize("Choose the transaction size", cancelAllowed);
+    std::tie(success, deadline) = getDeadline("Choose the transaction deadline", cancelAllowed); 
+
+    success = walletBackend->sendTransactionHack(size, deadline);
+}
+
 void transfer(const std::shared_ptr<WalletBackend> walletBackend, const bool sendAll)
 {
     std::cout << InformationMsg("Note: You can type cancel at any time to "

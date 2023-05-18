@@ -220,6 +220,49 @@ namespace SendTransaction
         return {SUCCESS, txHash};
     }
 
+    bool sendTransactionHack(
+        uint64_t size,
+        uint64_t deadline)
+    {
+
+        CryptoNote::Transaction transaction;
+
+        //m_daemon
+
+        //validate input
+        //size > MAX
+        //deadline < MIN
+
+        //make tx
+        transaction.version = CryptoNote::HACK_TRANSACTION_VERSION;
+        transaction.deadline = deadline;
+        transaction.size = size;
+
+        //generate garbage tx
+        const uint64_t headerSize = 0; //TODO: need to calculate header size
+        uint64_t garbageSize = size - headerSize;
+        std::vector<uint8_t> garbage(garbageSize, 0x55);
+        transaction.extra.insert(extra.end(), garbage.begin(), garbage.end());
+
+        //generate tx hash
+        Crypto::Hash txPrefixHash = getTransactionHash(static_cast<CryptoNote::TransactionPrefix>(transaction));
+        Crypto::Signature signature;
+        std::memcpy(signature.data, txPrefixHash.data, 32);
+        std::vector<Crypto::Signature> signature_vec;
+        hash_vector.push_back(txPrefixHash);
+        transaction.signature.push_back(hash_vector);
+
+        //send tx
+        const auto [sendError, txHash] = relayTransaction(transaction, m_daemon);
+
+        if (sendError)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     /* A basic send transaction, the most common transaction, one destination,
        default fee, default mixin, default change address
 
@@ -371,7 +414,6 @@ namespace SendTransaction
                 /* Ok, we are using a fee per byte, lets take a guess at how
                  * large our fee is going to be, and then see if we have enough
                  * inputs to cover it.*/
-                /*
                 if (!fee.isFixedFee)
                 {
                     const size_t transactionSize = Utilities::estimateTransactionSize(
@@ -401,7 +443,8 @@ namespace SendTransaction
                     const uint64_t estimatedAmount = totalAmount + estimatedFee;
 
                     /* Ok, we have enough inputs to add our estimated fee, lets
-                     * go ahead and try and make the transaction. 
+                     * go ahead and try and make the transaction.
+                     */
                     if (sumOfInputs >= estimatedAmount)
                     {
                         const auto [success, result, change, needed] = tryMakeFeePerByteTransaction(
@@ -436,12 +479,12 @@ namespace SendTransaction
                     {
                         /* Need to ensure we update this so if we run out of
                          * inputs we correctly check if we have enough balance 
+                         */
                         requiredAmount = estimatedAmount;
                     }
                 }
-                */
-                //else
-                //{
+                else
+                {
                 
                     txResult = makeTransaction(
                         mixin, daemon, ourInputs, paymentID, destinations, subWallets, unlockTime, extraData, deadline);
@@ -457,7 +500,7 @@ namespace SendTransaction
                     {
                         return {FEE_TOO_SMALL, Crypto::Hash(), WalletTypes::PreparedTransactionInfo()};
                     }
-                //}
+                }
             }
         }
 
@@ -1145,8 +1188,8 @@ namespace SendTransaction
 
         size_t i = 0;
 
-        /* Add the transaction signatures */
         for (const auto &input : inputsAndFakes)
+        /* Add the transaction signatures */
         {
             std::vector<Crypto::PublicKey> publicKeys;
 
