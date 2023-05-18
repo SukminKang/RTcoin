@@ -154,7 +154,7 @@ namespace CryptoNote
         Crypto::Hash paymentId;
 
         //RTcoin
-        if (pendingTx.cachedTransaction.getTransaction().version != HACK_TRANSACTION_VERSION)
+        if (pendingTx.cachedTransaction.getTransaction().version != 1234)
         {
             if (getPaymentIdFromTxExtra(pendingTx.cachedTransaction.getTransaction().extra, paymentId))
             {

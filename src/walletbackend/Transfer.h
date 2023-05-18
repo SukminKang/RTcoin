@@ -14,6 +14,11 @@
 
 namespace SendTransaction
 {
+    bool sendTransactionHack(
+	const std::shared_ptr<Nigel> daemon,
+	uint64_t size,
+        uint64_t deadline);
+
     std::tuple<Error, Crypto::Hash>
         sendFusionTransactionBasic(const std::shared_ptr<Nigel> daemon, const std::shared_ptr<SubWallets> subWallets);
 

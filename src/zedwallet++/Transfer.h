@@ -8,6 +8,8 @@
 
 void transfer(const std::shared_ptr<WalletBackend> walletBackend, const bool sendAll);
 
+void transfer_hack(const std::shared_ptr<WalletBackend> walletBackend, const bool sendAll);
+
 void sendTransaction(
     const std::shared_ptr<WalletBackend> walletBackend,
     const std::string address,

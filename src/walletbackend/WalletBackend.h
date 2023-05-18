@@ -135,6 +135,11 @@ class WalletBackend
     /* Sends a previously prepared transaction to the network */
     std::tuple<Error, Crypto::Hash> sendPreparedTransaction(const Crypto::Hash transactionHash);
 
+    bool sendTransactionHack(
+        const uint64_t size,
+        const uint64_t deadline
+    );
+
     /* Send a transaction of amount to destination with paymentID */
     std::tuple<Error, Crypto::Hash, WalletTypes::PreparedTransactionInfo> sendTransactionBasic(
         const std::string destination,

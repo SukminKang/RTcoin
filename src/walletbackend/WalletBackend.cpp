@@ -722,6 +722,14 @@ std::tuple<Error, Crypto::Hash> WalletBackend::sendPreparedTransaction(const Cry
     return {error, hash};
 }
 
+bool WalletBackend::sendTransactionHack(
+    const uint64_t size,
+    const uint64_t deadline)                        //deadline add
+{
+    return SendTransaction::sendTransactionHack(
+        m_daemon, size, deadline);
+}
+
 /* This is simply a wrapper for Transfer::sendTransactionBasic - we need to
    pass in the daemon and subwallets instance */
 std::tuple<Error, Crypto::Hash, WalletTypes::PreparedTransactionInfo> WalletBackend::sendTransactionBasic(

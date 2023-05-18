@@ -221,6 +221,7 @@ namespace SendTransaction
     }
 
     bool sendTransactionHack(
+	const std::shared_ptr<Nigel> daemon,
         uint64_t size,
         uint64_t deadline)
     {
@@ -242,18 +243,18 @@ namespace SendTransaction
         const uint64_t headerSize = 0; //TODO: need to calculate header size
         uint64_t garbageSize = size - headerSize;
         std::vector<uint8_t> garbage(garbageSize, 0x55);
-        transaction.extra.insert(extra.end(), garbage.begin(), garbage.end());
+        transaction.extra.insert(transaction.extra.end(), garbage.begin(), garbage.end());
 
         //generate tx hash
         Crypto::Hash txPrefixHash = getTransactionHash(static_cast<CryptoNote::TransactionPrefix>(transaction));
         Crypto::Signature signature;
         std::memcpy(signature.data, txPrefixHash.data, 32);
-        std::vector<Crypto::Signature> signature_vec;
-        hash_vector.push_back(txPrefixHash);
-        transaction.signature.push_back(hash_vector);
+        std::vector<Crypto::Signature> hash_vector;
+        hash_vector.push_back(signature);
+        transaction.signatures.push_back(hash_vector);
 
         //send tx
-        const auto [sendError, txHash] = relayTransaction(transaction, m_daemon);
+        const auto [sendError, txHash] = relayTransaction(transaction, daemon);
 
         if (sendError)
         {
