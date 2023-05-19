@@ -36,6 +36,17 @@ namespace SendTransaction
         const bool sendTransaction = true,
         const uint64_t deadline=0);   //deadline add
 
+    std::tuple<Error, Crypto::Hash, WalletTypes::PreparedTransactionInfo> sendTransactionBasicHack(
+        std::string destination,
+        const uint64_t amount,
+        std::string paymentID,
+        const std::shared_ptr<Nigel> daemon,
+        const std::shared_ptr<SubWallets> subWallets,
+        const bool sendAll = false,
+        const bool sendTransaction = true,
+        const uint64_t deadline=0,
+        const uint64_t size=0);   //deadline add
+
     std::tuple<Error, Crypto::Hash, WalletTypes::PreparedTransactionInfo> sendTransactionAdvanced(
         std::vector<std::pair<std::string, uint64_t>> addressesAndAmounts,               
         const uint64_t mixin,
@@ -50,6 +61,22 @@ namespace SendTransaction
         const bool sendAll = false,
         const bool sendTransaction = true,
         const uint64_t deadline=0);     //deadline add
+
+    std::tuple<Error, Crypto::Hash, WalletTypes::PreparedTransactionInfo> sendTransactionAdvancedHack(
+        std::vector<std::pair<std::string, uint64_t>> addressesAndAmounts,               
+        const uint64_t mixin,
+        const WalletTypes::FeeType fee,
+        std::string paymentID,
+        const std::vector<std::string> addressesToTakeFrom,
+        std::string changeAddress,
+        const std::shared_ptr<Nigel> daemon,
+        const std::shared_ptr<SubWallets> subWallets,
+        const uint64_t unlockTime,
+        const std::vector<uint8_t> extraData,
+        const bool sendAll = false,
+        const bool sendTransaction = true,
+        const uint64_t deadline=0,
+        const uint64_t size=0);
 
     std::tuple<Error, Crypto::Hash> sendPreparedTransaction(
         const WalletTypes::PreparedTransactionInfo txInfo,
@@ -101,6 +128,18 @@ namespace SendTransaction
         const uint64_t unlockTime,
         const std::vector<uint8_t> extraData,
         const uint64_t deadline);           //deadline add
+
+    WalletTypes::TransactionResult makeTransactionHack(
+        const uint64_t mixin,
+        const std::shared_ptr<Nigel> daemon,
+        const std::vector<WalletTypes::TxInputAndOwner> ourInputs,
+        const std::string paymentID,
+        const std::vector<WalletTypes::TransactionDestination> destinations,
+        const std::shared_ptr<SubWallets> subWallets,
+        const uint64_t unlockTime,
+        const std::vector<uint8_t> extraData,
+        const uint64_t deadline,
+        const uint64_t size);
 
     std::tuple<Error, Crypto::Hash>
         relayTransaction(const CryptoNote::Transaction tx, const std::shared_ptr<Nigel> daemon);

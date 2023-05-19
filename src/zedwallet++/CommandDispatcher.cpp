@@ -56,6 +56,13 @@ bool handleCommand(
 
         transfer(walletBackend, sendAll);
     }
+    //RTcoin
+    else if (command == "transfer_hack")
+    {
+        const bool sendAll = false;
+
+        transfer_hack(walletBackend, sendAll);
+    }
     /* Advanced commands */
     else if (command == "ab_add")
     {

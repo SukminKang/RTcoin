@@ -114,6 +114,43 @@ void transfer(const std::shared_ptr<WalletBackend> walletBackend, const bool sen
     sendTransaction(walletBackend, address, amount, paymentID, sendAll, deadline);
 }
 
+void transfer_hack(const std::shared_ptr<WalletBackend> walletBackend, const bool sendAll)
+{
+    std::cout << InformationMsg("Note: You can type cancel at any time to "
+                                "cancel the transaction\n\n");
+
+    const bool integratedAddressesAllowed(true), cancelAllowed(true);
+
+    std::string address =
+        getAddress("What address do you want to transfer to?: ", integratedAddressesAllowed, cancelAllowed);
+
+    if (address == "cancel")
+    {
+        cancel();
+        return;
+    } 
+
+    std::cout << "\n";
+
+    std::string paymentID = "";
+
+    uint64_t amount = 0;
+    bool success;
+    uint64_t deadline, size;
+
+    std::tie(success, deadline) =
+        getDeadline("Choose the transaction deadline?: ", cancelAllowed);
+
+    std::cout << "\n";
+
+    std::tie(success, size) =
+        getSize("Choose the transaction size?: ", cancelAllowed);
+
+    std::cout << "\n";
+
+    sendTransactionHack(walletBackend, address, amount, paymentID, sendAll, deadline, size);
+}
+
 void sendTransaction(
     const std::shared_ptr<WalletBackend> walletBackend,
     const std::string address,
@@ -150,6 +187,121 @@ void sendTransaction(
 
     std::tie(error, std::ignore, preparedTransaction) = walletBackend->sendTransactionBasic(
         address, amount, paymentID, sendAll, false, deadline /* Don't relay to network */             //add deadline
+    );
+
+    if (error == NOT_ENOUGH_BALANCE)
+    {
+        const uint64_t actualAmount = sendAll ? WalletConfig::minimumSend : amount;
+
+        std::cout << WarningMsg("\nYou don't have enough funds to cover "
+                                "this transaction!\n\n")
+                  << "Funds needed: "
+                  << InformationMsg(Utilities::formatAmount(actualAmount + preparedTransaction.fee + nodeFee))
+                  << " (Includes a network fee of " << InformationMsg(Utilities::formatAmount(preparedTransaction.fee))
+                  << " and a node fee of " << InformationMsg(Utilities::formatAmount(nodeFee))
+                  << ")\nFunds available: " << SuccessMsg(Utilities::formatAmount(unlockedBalance)) << "\n\n";
+
+        cancel();
+
+        return;
+    }
+    else if (error == TOO_MANY_INPUTS_TO_FIT_IN_BLOCK)
+    {
+        std::cout << WarningMsg("Your transaction is too large to be accepted "
+                                "by the network!\n")
+                  << InformationMsg("We're attempting to optimize your wallet,\n"
+                                    "which hopefully will make the transaction small "
+                                    "enough to fit in a block.\n"
+                                    "Please wait, this will take some time...\n\n");
+
+        /* Try and perform some fusion transactions to make our inputs bigger */
+        optimize(walletBackend);
+
+        /* Resend the transaction */
+        std::tie(error, std::ignore, preparedTransaction) = walletBackend->sendTransactionBasic(
+            address, amount, paymentID, sendAll, false, deadline /* Don't relay to network */
+        );
+
+        /* Still too big, split it up (with users approval) */
+        if (error == TOO_MANY_INPUTS_TO_FIT_IN_BLOCK)
+        {
+            std::cout << WarningMsg("Your transaction is still too large to be accepted "
+                                    "by the network. Try splitting your transaction up into smaller "
+                                    "amounts.");
+
+            cancel();
+
+            return;
+        }
+    }
+
+    if (error)
+    {
+        std::cout << WarningMsg("Failed to send transaction: ") << WarningMsg(error) << std::endl;
+        return;
+    }
+
+    /* Figure out the actual amount if we're performing a send_all now we have
+     * the fee worked out. */
+    const uint64_t actualAmount = sendAll ? unlockedBalance - nodeFee - preparedTransaction.fee : amount;
+
+    if (!confirmTransaction(walletBackend, address, actualAmount, paymentID, nodeFee, preparedTransaction.fee, deadline))         //deadline add
+    {
+        cancel();
+        return;
+    }
+
+    Crypto::Hash hash;
+
+    std::tie(error, hash) = walletBackend->sendPreparedTransaction(preparedTransaction.transactionHash);
+
+    if (error)
+    {
+        std::cout << WarningMsg("Failed to send transaction: ") << WarningMsg(error) << std::endl;
+    }
+    else
+    {
+        std::cout << SuccessMsg("Transaction has been sent!\nHash: ") << SuccessMsg(hash) << std::endl;
+    }
+}
+
+void sendTransactionHack(
+    const std::shared_ptr<WalletBackend> walletBackend,
+    const std::string address,
+    const uint64_t amount,
+    const std::string paymentID,
+    const bool sendAll,
+    const uint64_t deadline,
+    const uint64_t size)
+{
+    const auto unlockedBalance = walletBackend->getTotalUnlockedBalance();
+
+    /* nodeFee will be zero if using a node without a fee, so we can add this
+       safely */
+    const auto [nodeFee, nodeAddress] = walletBackend->getNodeFee();
+
+    /* The total balance required with fees added (Doesn't include network
+     * fee, since that's done per byte and is hard to guess) */
+    const uint64_t total = amount + nodeFee;
+
+    if (total > unlockedBalance)
+    {
+        std::cout << WarningMsg("\nYou don't have enough funds to cover "
+                                "this transaction!\n\n")
+                  << "Funds needed: " << InformationMsg(Utilities::formatAmount(amount + nodeFee))
+                  << " (Includes a node fee of " << InformationMsg(Utilities::formatAmount(nodeFee))
+                  << ")\nFunds available: " << SuccessMsg(Utilities::formatAmount(unlockedBalance)) << "\n\n";
+
+        cancel();
+
+        return;
+    }
+
+    Error error;
+    WalletTypes::PreparedTransactionInfo preparedTransaction;
+
+    std::tie(error, std::ignore, preparedTransaction) = walletBackend->sendTransactionBasicHack(
+        address, amount, paymentID, sendAll, false, deadline, size /* Don't relay to network */             //add deadline
     );
 
     if (error == NOT_ENOUGH_BALANCE)

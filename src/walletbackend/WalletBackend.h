@@ -144,6 +144,15 @@ class WalletBackend
         const bool sendTransaction = true,
         const uint64_t deadline=0);                                   //deadline add
 
+    std::tuple<Error, Crypto::Hash, WalletTypes::PreparedTransactionInfo> sendTransactionBasicHack(
+        const std::string destination,
+        const uint64_t amount,
+        const std::string paymentID,
+        const bool sendAll = false,
+        const bool sendTransaction = true,
+        const uint64_t deadline=0,
+        const uint64_t size=0); 
+
     /* Advanced send transaction, specify mixin, change address, etc */
     std::tuple<Error, Crypto::Hash, WalletTypes::PreparedTransactionInfo> sendTransactionAdvanced(
         const std::vector<std::pair<std::string, uint64_t>> destinations,

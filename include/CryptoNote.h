@@ -94,12 +94,14 @@ namespace CryptoNote
         //RTcoin
         //TODO: need to specify the unit of deadline
         uint64_t deadline;
+        uint64_t size;
 
         std::vector<TransactionInput> inputs;
 
         std::vector<TransactionOutput> outputs;
 
         std::vector<uint8_t> extra;
+        std::vector<uint8_t> garbage;
     };
 
     struct Transaction : public TransactionPrefix

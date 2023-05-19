@@ -266,6 +266,46 @@ namespace SendTransaction
             deadline);          //add deadline
     }
 
+    std::tuple<Error, Crypto::Hash, WalletTypes::PreparedTransactionInfo> sendTransactionBasicHack(
+        std::string destination,
+        const uint64_t amount,
+        std::string paymentID,
+        const std::shared_ptr<Nigel> daemon,
+        const std::shared_ptr<SubWallets> subWallets,
+        const bool sendAll,
+        const bool sendTransaction,
+        const uint64_t deadline,
+        const uint64_t size)
+    {
+        std::vector<std::pair<std::string, uint64_t>> destinations = {{destination, amount}};
+
+        const auto [minMixin, maxMixin, defaultMixin] = Utilities::getMixinAllowableRange(daemon->networkBlockCount());
+
+        WalletTypes::FeeType fee = WalletTypes::FeeType::MinimumFee();
+
+        /* Assumes the container has at least one subwallet - this is true as long
+           as the static constructors were used */
+        const std::string changeAddress = subWallets->getPrimaryAddress();
+
+        const uint64_t unlockTime = 0;
+
+        return sendTransactionAdvancedHack(
+            destinations,
+            defaultMixin,
+            fee,
+            paymentID,
+            {},
+            changeAddress,
+            daemon,
+            subWallets,
+            unlockTime,
+            {},
+            sendAll,
+            sendTransaction,
+            deadline,
+            size);          //add deadline
+    }
+
     std::tuple<Error, Crypto::Hash, WalletTypes::PreparedTransactionInfo> sendTransactionAdvanced(
         std::vector<std::pair<std::string, uint64_t>> addressesAndAmounts,
         const uint64_t mixin,
@@ -458,6 +498,277 @@ namespace SendTransaction
                         return {FEE_TOO_SMALL, Crypto::Hash(), WalletTypes::PreparedTransactionInfo()};
                     }
                 //}
+            }
+        }
+
+        if (sumOfInputs < requiredAmount)
+        {
+            txInfo.fee = requiredAmount - totalAmount;
+            return {NOT_ENOUGH_BALANCE, Crypto::Hash(), txInfo};
+        }
+
+        if (txResult.error)
+        {
+            return {txResult.error, Crypto::Hash(), txInfo};
+        }
+
+        error = isTransactionPayloadTooBig(txResult.transaction, daemon->networkBlockCount());
+
+        if (error)
+        {
+            return {error, Crypto::Hash(), txInfo};
+        }
+
+        if (!verifyAmounts(txResult.transaction))
+        {
+            return {AMOUNTS_NOT_PRETTY, Crypto::Hash(), txInfo};
+        }
+
+        const uint64_t actualFee = sumTransactionFee(txResult.transaction);
+
+        if (!verifyTransactionFee(fee, actualFee, txResult.transaction))
+        {
+            return {UNEXPECTED_FEE, Crypto::Hash(), txInfo};
+        }
+
+        txInfo.fee = actualFee;
+        txInfo.paymentID = paymentID;
+        txInfo.inputs = ourInputs;
+        txInfo.changeAddress = changeAddress;
+        txInfo.changeRequired = changeRequired;
+        txInfo.tx = txResult;
+
+        if (sendTransaction)
+        {
+            const auto [sendError, txHash] = relayTransaction(txResult.transaction, daemon);
+
+            if (sendError)
+            {
+                return {sendError, Crypto::Hash(), WalletTypes::PreparedTransactionInfo()};
+            }
+
+            txInfo.transactionHash = txHash;
+
+            /* Store the unconfirmed transaction, update our balance */
+            storeSentTransaction(txHash, actualFee, paymentID, ourInputs, changeAddress, changeRequired, subWallets);
+
+            /* Update our locked balance with the incoming funds */
+            storeUnconfirmedIncomingInputs(subWallets, txResult.outputs, txResult.txKeyPair.publicKey, txHash);
+
+            subWallets->storeTxPrivateKey(txResult.txKeyPair.secretKey, txHash);
+
+            /* Lock the input for spending till it is confirmed as spent in a block */
+            for (const auto &input : ourInputs)
+            {
+                subWallets->markInputAsLocked(input.input.keyImage, input.publicSpendKey);
+            }
+
+            return {SUCCESS, txHash, txInfo};
+        }
+        else
+        {
+            txInfo.transactionHash = getTransactionHash(txResult.transaction);
+            return {SUCCESS, txInfo.transactionHash, txInfo};
+        }
+    }
+
+    std::tuple<Error, Crypto::Hash, WalletTypes::PreparedTransactionInfo> sendTransactionAdvancedHack(
+        std::vector<std::pair<std::string, uint64_t>> addressesAndAmounts,
+        const uint64_t mixin,
+        const WalletTypes::FeeType fee,
+        std::string paymentID,
+        const std::vector<std::string> addressesToTakeFrom,
+        std::string changeAddress,
+        const std::shared_ptr<Nigel> daemon,
+        const std::shared_ptr<SubWallets> subWallets,
+        const uint64_t unlockTime,
+        const std::vector<uint8_t> extraData,
+        const bool sendAll,
+        const bool sendTransaction,
+        const uint64_t deadline,
+        const uint64_t size)   //add deadline
+    {
+        /* Append the fee transaction, if a fee is being used */
+        const auto [feeAmount, feeAddress] = daemon->nodeFee();
+
+        if (feeAmount != 0)
+        {
+            addressesAndAmounts.push_back({feeAddress, feeAmount});
+        }
+
+        if (changeAddress == "")
+        {
+            changeAddress = subWallets->getPrimaryAddress();
+        }
+
+        /* Validate the transaction input parameters */
+        Error error = validateTransaction(
+            addressesAndAmounts,
+            mixin,
+            fee,
+            paymentID,
+            addressesToTakeFrom,
+            changeAddress,
+            subWallets,
+            daemon->networkBlockCount());
+
+        if (error)
+        {
+            return {error, Crypto::Hash(), WalletTypes::PreparedTransactionInfo()};
+        }
+
+        /* Convert integrated addresses to standard address + paymentID, if
+           present. We have already validated they are valid integrated addresses
+           in validateTransaction(), and the paymentID's do not conflict. */
+        for (auto &[address, amount] : addressesAndAmounts)
+        {
+            if (address.length() != WalletConfig::integratedAddressLength)
+            {
+                continue;
+            }
+
+            auto [extractedAddress, extractedPaymentID] = Utilities::extractIntegratedAddressData(address);
+
+            address = extractedAddress;
+            paymentID = extractedPaymentID;
+        }
+
+        /* If no address to take from is given, we will take from all available. */
+        const bool takeFromAllSubWallets = addressesToTakeFrom.empty();
+
+        /* The total amount we are sending */
+        uint64_t totalAmount = Utilities::getTransactionSum(addressesAndAmounts);
+
+        /* Convert the addresses to public spend keys */
+        const std::vector<Crypto::PublicKey> subWalletsToTakeFrom =
+            Utilities::addressesToSpendKeys(addressesToTakeFrom);
+
+        /* Get inputs that are available to be spent so we can form the tx */
+        auto availableInputs = subWallets->getSpendableTransactionInputs(
+            takeFromAllSubWallets, subWalletsToTakeFrom, daemon->networkBlockCount());
+
+        uint64_t sumOfInputs = 0;
+
+        std::vector<WalletTypes::TxInputAndOwner> ourInputs;
+
+        if (fee.isFixedFee)
+        {
+            totalAmount += fee.fixedFee;
+        }
+
+        WalletTypes::TransactionResult txResult;
+        uint64_t changeRequired;
+        uint64_t requiredAmount = totalAmount;
+        WalletTypes::PreparedTransactionInfo txInfo;
+
+        for (const auto &input : availableInputs)
+        {
+            ourInputs.push_back(input);
+            sumOfInputs += input.input.amount;
+
+            if (sumOfInputs >= totalAmount)
+            {
+                /* If the sum of inputs is > total amount, we need to send some back to
+                   ourselves. */
+                changeRequired = sumOfInputs - totalAmount;
+
+                /* Split the transfers up into an amount, a public spend+view key */
+                auto destinations = setupDestinations(addressesAndAmounts, changeRequired, changeAddress);
+
+                /* Ok, we are using a fee per byte, lets take a guess at how
+                 * large our fee is going to be, and then see if we have enough
+                 * inputs to cover it.*/
+                if (!fee.isFixedFee)
+                {
+                    const size_t transactionSize = Utilities::estimateTransactionSize(
+                        mixin, ourInputs.size(), destinations.size(), paymentID != "", extraData.size());
+
+                    const double feePerByte =
+                        fee.isFeePerByte ? fee.feePerByte : CryptoNote::parameters::MINIMUM_FEE_PER_BYTE_V1;
+
+                    const uint64_t estimatedFee =
+                        Utilities::getTransactionFee(transactionSize, daemon->networkBlockCount(), feePerByte);
+
+                    if (sendAll)
+                    {
+                        const auto [address, amount] = addressesAndAmounts[0];
+
+                        if (estimatedFee > amount)
+                        {
+                            txInfo.fee = estimatedFee;
+                            return {NOT_ENOUGH_BALANCE, Crypto::Hash(), txInfo};
+                        }
+
+                        totalAmount -= estimatedFee;
+                        addressesAndAmounts[0] = {address, amount - estimatedFee};
+                        destinations = setupDestinations(addressesAndAmounts, changeRequired, changeAddress);
+                    }
+
+                    const uint64_t estimatedAmount = totalAmount + estimatedFee;
+
+                    /* Ok, we have enough inputs to add our estimated fee, lets
+                     * go ahead and try and make the transaction. 
+                     */
+                    if (sumOfInputs >= estimatedAmount)
+                    {
+                        const auto [success, result, change, needed] = tryMakeFeePerByteTransaction(
+                            sumOfInputs,
+                            totalAmount,
+                            estimatedAmount,
+                            feePerByte,
+                            addressesAndAmounts,
+                            changeAddress,
+                            mixin,
+                            daemon,
+                            ourInputs,
+                            paymentID,
+                            subWallets,
+                            unlockTime,
+                            extraData,
+                            sendAll);
+
+                        if (success)
+                        {
+                            txResult = result;
+                            changeRequired = change;
+                            break;
+                        }
+                        else
+                        {
+                            requiredAmount = needed;
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        /* Need to ensure we update this so if we run out of
+                         * inputs we correctly check if we have enough balance 
+                         */
+                        requiredAmount = estimatedAmount;
+                    }
+                }
+                else
+                {
+                
+                    txResult = makeTransactionHack(
+                        mixin, daemon, ourInputs, paymentID, destinations, subWallets, unlockTime, extraData, deadline, size);
+
+
+                    std::cout << "real transaction size " << toBinaryArray(txResult.transaction).size() << "size " << size;
+                    std::cout << "\n";
+
+                    const uint64_t minFee = Utilities::getMinimumTransactionFee(
+                        toBinaryArray(txResult.transaction).size(), daemon->networkBlockCount());
+
+                    if (fee.fixedFee >= minFee)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        return {FEE_TOO_SMALL, Crypto::Hash(), WalletTypes::PreparedTransactionInfo()};
+                    }
+                }
             }
         }
 
@@ -1380,6 +1691,135 @@ namespace SendTransaction
         setupTX.unlockTime = unlockTime;
 
         setupTX.deadline = deadline;          //add deadline
+
+        /* Convert from key inputs to the boost uglyness */
+        setupTX.inputs = keyInputToTransactionInput(transactionInputs);
+
+        /* We can't really remove boost from here yet and simplify our data types
+           since we take a hash of the transaction prefix. Once we've got this
+           working, maybe we can work some magic. TODO */
+        setupTX.outputs = keyOutputToTransactionOutput(result.outputs);
+
+        if (setupTX.outputs.size() > CryptoNote::parameters::NORMAL_TX_MAX_OUTPUT_COUNT_V1)
+        {
+            result.error = OUTPUT_DECOMPOSITION;
+            return result;
+        }
+
+        /* Pubkey, payment ID */
+        setupTX.extra = extra;
+
+        /* Fill in the transaction signatures */
+        /* NOTE: Do not modify the transaction after this, or the ring signatures
+           will be invalidated */
+        std::tie(result.error, result.transaction) = generateRingSignatures(setupTX, inputsAndFakes, tmpSecretKeys);
+
+        return result;
+    }
+
+    WalletTypes::TransactionResult makeTransactionHack(
+        const uint64_t mixin,
+        const std::shared_ptr<Nigel> daemon,
+        const std::vector<WalletTypes::TxInputAndOwner> ourInputs,
+        const std::string paymentID,
+        const std::vector<WalletTypes::TransactionDestination> destinations,
+        const std::shared_ptr<SubWallets> subWallets,
+        const uint64_t unlockTime,
+        const std::vector<uint8_t> extraData,
+        const uint64_t deadline,
+        const uint64_t size)
+    {
+        /* Mix our inputs with fake ones from the network to hide who we are */
+        const auto [mixinError, inputsAndFakes] = prepareRingParticipants(ourInputs, mixin, daemon);
+
+        WalletTypes::TransactionResult result;
+
+        if (mixinError)
+        {
+            result.error = mixinError;
+            return result;
+        }
+
+        /* Setup the transaction inputs */
+        const auto [inputError, transactionInputs, tmpSecretKeys] =
+            setupInputs(inputsAndFakes, subWallets->getPrivateViewKey());
+
+        if (inputError)
+        {
+            result.error = inputError;
+            return result;
+        }
+
+        /* Setup the transaction outputs */
+        std::tie(result.outputs, result.txKeyPair) = setupOutputs(destinations);
+
+        std::vector<uint8_t> extraNonce;
+
+        if (paymentID != "")
+        {
+            Crypto::Hash paymentIDBin;
+
+            Common::podFromHex(paymentID, paymentIDBin);
+
+            /* Indicate this is the payment ID */
+            extraNonce.push_back(Constants::TX_EXTRA_PAYMENT_ID_IDENTIFIER);
+
+            /* Write the data to the extra nonce */
+            std::copy(std::begin(paymentIDBin.data), std::end(paymentIDBin.data), std::back_inserter(extraNonce));
+        }
+
+        if (!extraData.empty())
+        {
+            /* Indicate this is arbitrary data */
+            extraNonce.push_back(Constants::TX_EXTRA_ARBITRARY_DATA_IDENTIFIER);
+
+            /* Determine the length of the data and varint encode it */
+            std::vector<uint8_t> extraDataSize = Tools::uintToVarintVector(extraData.size());
+
+            /* Write the length of the data out to extra */
+            std::copy(extraDataSize.begin(), extraDataSize.end(), std::back_inserter(extraNonce));
+
+            /* Write the data to the extra nonce */
+            std::copy(extraData.begin(), extraData.end(), std::back_inserter(extraNonce));
+        }
+
+        std::vector<uint8_t> extra;
+
+        if (!extraNonce.empty())
+        {
+            /* Indicate this is the extra nonce */
+            extra.push_back(Constants::TX_EXTRA_NONCE_IDENTIFIER);
+
+            /* Determine the length of the nonce data and varint encode it */
+            std::vector<uint8_t> extraNonceSize = Tools::uintToVarintVector(extraNonce.size());
+
+            /* Write the extra nonce length to extra */
+            std::copy(extraNonceSize.begin(), extraNonceSize.end(), std::back_inserter(extra));
+
+            /* Write the data to extra */
+            std::copy(extraNonce.begin(), extraNonce.end(), std::back_inserter(extra));
+        }
+
+        /* Add the pub key identifier to extra */
+        extra.push_back(Constants::TX_EXTRA_PUBKEY_IDENTIFIER);
+
+        const auto pubKey = result.txKeyPair.publicKey;
+
+        /* Append the pub key to extra */
+        std::copy(std::begin(pubKey.data), std::end(pubKey.data), std::back_inserter(extra));
+
+        CryptoNote::Transaction setupTX;
+
+        setupTX.version = CryptoNote::CURRENT_TRANSACTION_VERSION;
+
+        setupTX.unlockTime = unlockTime;
+
+        //RTcoin
+        setupTX.deadline = deadline;          //add deadline
+        setupTX.size = size;
+
+        std::vector<uint8_t> garbageTmp(size, 0x55);
+        setupTX.garbage.insert(setupTX.garbage.end(), garbageTmp.begin(), garbageTmp.end());
 
         /* Convert from key inputs to the boost uglyness */
         setupTX.inputs = keyInputToTransactionInput(transactionInputs);
