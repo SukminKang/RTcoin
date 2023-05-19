@@ -68,7 +68,7 @@ namespace CryptoNote
         static_assert(EMISSION_SPEED_FACTOR <= 8 * sizeof(uint64_t), "Bad EMISSION_SPEED_FACTOR");
 
 	//TODO: you need to generate genesis hex
-        const char GENESIS_COINBASE_TX_HEX[] = "010a01ff00013e029b2e4c0281c0b02e7c53291a94d1d0cbff8883f8024f5142ee494ffbbd0880718401012723e81bed4c403aaa78a7d81bafd39811d7fe65203e056bf6f0ce226bf7224104000000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000000000006ab5bf87f61074614ee476f68e8c5f816d5df43825550c6a053c22c3c1d86980d";
+        const char GENESIS_COINBASE_TX_HEX[] = "010ab0c191bdf7ff1ff0c091bdf7ff1f01ff00013e029b2e4c0281c0b02e7c53291a94d1d0cbff8883f8024f5142ee494ffbbd0880718401016ea9643be0266166a5a5280b8eea859456916ce80e651fd73b7afe2921553f2004000000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000000000006fe7482f93a989423664f866711db7b6c53bdc72a18da599a512fff266138020f00";
 
         static_assert(
             sizeof(GENESIS_COINBASE_TX_HEX) / sizeof(*GENESIS_COINBASE_TX_HEX) != 1,
@@ -94,7 +94,7 @@ namespace CryptoNote
         const size_t CRYPTONOTE_DISPLAY_DECIMAL_POINT = 2;
 
         /* TODO: Remove? */
-        const uint64_t MINIMUM_FEE = UINT64_C(10);
+        const uint64_t MINIMUM_FEE = UINT64_C(0);
 
         /* Fee per byte is rounded up in chunks. This helps makes estimates
          * more accurate. It's suggested to make this a power of two, to relate
@@ -106,7 +106,8 @@ namespace CryptoNote
          * something like 2 because it makes for pretty resulting fees
          * - 5 TRTL vs 5.12 TRTL. You can read this as.. the fee per chunk
          * is 500 atomic units. The fee per byte is 500 / chunk size. */
-        const double MINIMUM_FEE_PER_BYTE_V1 = 500.00 / FEE_PER_BYTE_CHUNK_SIZE;
+        //const double MINIMUM_FEE_PER_BYTE_V1 = 500.00 / FEE_PER_BYTE_CHUNK_SIZE;
+        const double MINIMUM_FEE_PER_BYTE_V1 = 0.0;
 
         /* Height for our first fee to byte change to take effect. */
         const uint64_t MINIMUM_FEE_PER_BYTE_V1_HEIGHT = 2'200'000;

@@ -167,7 +167,25 @@ namespace SendTransaction
         const std::shared_ptr<SubWallets> subWallets,
         const uint64_t unlockTime,
         const std::vector<uint8_t> extraData,
-        const bool sendAll);                     
+        const bool sendAll);
+
+    std::tuple<bool, WalletTypes::TransactionResult, uint64_t, uint64_t> tryMakeFeePerByteTransactionHack(
+        const uint64_t sumOfInputs,
+        uint64_t totalAmount,
+        uint64_t estimatedAmount,
+        const double feePerByte,
+        std::vector<std::pair<std::string, uint64_t>> addressesAndAmounts,
+        const std::string changeAddress,
+        const uint64_t mixin,
+        const std::shared_ptr<Nigel> daemon,
+        const std::vector<WalletTypes::TxInputAndOwner> ourInputs,
+        const std::string paymentID,
+        const std::shared_ptr<SubWallets> subWallets,
+        const uint64_t unlockTime,
+        const std::vector<uint8_t> extraData,
+        const bool sendAll,
+        const uint64_t deadline,
+        const uint64_t size);
 
     Error isTransactionPayloadTooBig(const CryptoNote::Transaction tx, const uint64_t currentHeight);
 

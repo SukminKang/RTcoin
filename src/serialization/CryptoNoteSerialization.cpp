@@ -214,18 +214,24 @@ namespace CryptoNote
         }
 
         serializer(txP.unlockTime, "unlock_time");
+        serializer(txP.deadline, "deadline");
+        serializer(txP.size, "size");
         serializer(txP.inputs, "vin");
         serializer(txP.outputs, "vout");
         serializeAsBinary(txP.extra, "extra", serializer);
+        serializeAsBinary(txP.garbage, "garbage", serializer);
     }
 
     void serialize(BaseTransaction &tx, ISerializer &serializer)
     {
         serializer(tx.version, "version");
         serializer(tx.unlockTime, "unlock_time");
+        serializer(tx.deadline, "deadline");
+        serializer(tx.size, "size");
         serializer(tx.inputs, "vin");
         serializer(tx.outputs, "vout");
         serializeAsBinary(tx.extra, "extra", serializer);
+        serializeAsBinary(tx.garbage, "garbage", serializer);
 
         if (tx.version >= TRANSACTION_VERSION_2)
         {

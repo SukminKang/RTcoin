@@ -285,6 +285,7 @@ Error validateAmount(
 
     if (totalAmount > availableBalance)
     {
+        std::cout << "totalAmount: " << totalAmount << " availableBalance: " << availableBalance << std::endl;
         return NOT_ENOUGH_BALANCE;
     }
 
@@ -304,10 +305,12 @@ Error validateDestinations(const std::vector<std::pair<std::string, uint64_t>> d
     for (const auto &[destination, amount] : destinations)
     {
         /* Check all of the amounts are > 0 */
+        /*
         if (amount == 0)
         {
             return AMOUNT_IS_ZERO;
         }
+        */
 
         destinationAddresses.push_back(destination);
     }

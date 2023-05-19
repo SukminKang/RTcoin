@@ -657,6 +657,7 @@ namespace SendTransaction
         }
 
         WalletTypes::TransactionResult txResult;
+        txResult.transaction.version = CryptoNote::CURRENT_TRANSACTION_VERSION;
         uint64_t changeRequired;
         uint64_t requiredAmount = totalAmount;
         WalletTypes::PreparedTransactionInfo txInfo;
@@ -695,6 +696,7 @@ namespace SendTransaction
 
                         if (estimatedFee > amount)
                         {
+                            std::cout << "estimatedFee: " << estimatedFee << " amount: " << amount << std::endl;
                             txInfo.fee = estimatedFee;
                             return {NOT_ENOUGH_BALANCE, Crypto::Hash(), txInfo};
                         }
@@ -711,7 +713,7 @@ namespace SendTransaction
                      */
                     if (sumOfInputs >= estimatedAmount)
                     {
-                        const auto [success, result, change, needed] = tryMakeFeePerByteTransaction(
+                        const auto [success, result, change, needed] = tryMakeFeePerByteTransactionHack(
                             sumOfInputs,
                             totalAmount,
                             estimatedAmount,
@@ -725,7 +727,9 @@ namespace SendTransaction
                             subWallets,
                             unlockTime,
                             extraData,
-                            sendAll);
+                            sendAll,
+                            deadline,
+                            size);
 
                         if (success)
                         {
@@ -954,6 +958,80 @@ namespace SendTransaction
         }
 
         throw std::runtime_error("Programmer error @ tryMakeFeePerByteTransaction");
+    }
+
+    std::tuple<bool, WalletTypes::TransactionResult, uint64_t, uint64_t> tryMakeFeePerByteTransactionHack(
+        const uint64_t sumOfInputs,
+        uint64_t amountPreFee,
+        uint64_t amountIncludingFee,
+        const double feePerByte,
+        std::vector<std::pair<std::string, uint64_t>> addressesAndAmounts,
+        const std::string changeAddress,
+        const uint64_t mixin,
+        const std::shared_ptr<Nigel> daemon,
+        const std::vector<WalletTypes::TxInputAndOwner> ourInputs,
+        const std::string paymentID,
+        const std::shared_ptr<SubWallets> subWallets,
+        const uint64_t unlockTime,
+        const std::vector<uint8_t> extraData,
+        const bool sendAll,
+        const uint64_t deadline,
+        const uint64_t size)
+    {
+        while (true)
+        {
+            const uint64_t changeRequired = sumOfInputs - amountIncludingFee;
+
+            /* Need to recalculate destinations since amount of change, err, changed! */
+            const auto destinations = setupDestinations(addressesAndAmounts, changeRequired, changeAddress);
+
+            WalletTypes::TransactionResult txResult =
+                makeTransactionHack(mixin, daemon, ourInputs, paymentID, destinations, subWallets, unlockTime, extraData, deadline, size);
+
+            const size_t actualTxSize = toBinaryArray(txResult.transaction).size();
+
+            std::cout << "actualTxSize: " << actualTxSize;
+            std::cout << " ";
+
+            const uint64_t actualFee =
+                Utilities::getTransactionFee(actualTxSize, daemon->networkBlockCount(), feePerByte);
+
+            /* Great! The fee we estimated is greater than or equal
+             * to the min/specified fee per byte for a transaction
+             * of this size, so we can continue with sending the
+             * transaction. */
+            if (amountIncludingFee - amountPreFee >= actualFee)
+            {
+                return {true, txResult, changeRequired, 0};
+            }
+
+            /* If we're sending all, then we adjust the amount we're sending,
+             * rather than the change we're returning. */
+            if (sendAll)
+            {
+                amountPreFee = amountIncludingFee - actualFee;
+                const auto [address, amount] = addressesAndAmounts[0];
+                addressesAndAmounts[0] = {address, amountPreFee};
+            }
+
+            /* The actual fee required for a tx of this size is not
+             * covered by the amount of inputs we have so far, lets
+             * go select some more then try again. */
+            if (amountPreFee + actualFee > sumOfInputs)
+            {
+                return {false, txResult, changeRequired, amountPreFee + actualFee};
+            }
+
+            /* Our fee was too low. Lets try making the transaction again,
+             * this time using the actual fee calculated. Note that this still
+             * may fail, since we are possibly adding more outputs, and so have
+             * a large transaction size. If we keep increasing the fee and keep
+             * failing, eventually we'll hit a point where we either succeed
+             * or we need to gather more inputs. */
+            amountIncludingFee = amountPreFee + actualFee;
+        }
+
+        throw std::runtime_error("Programmer error @ tryMakeFeePerByteTransactionHack");
     }
 
     Error isTransactionPayloadTooBig(const CryptoNote::Transaction tx, const uint64_t currentHeight)
