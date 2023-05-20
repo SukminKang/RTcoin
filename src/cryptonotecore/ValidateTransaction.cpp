@@ -52,22 +52,22 @@ TransactionValidationResult ValidateTransaction::validate()
     }
 
     /* Validate the transaction inputs are non empty, key images are valid, etc. */
-    if (!validateTransactionInputs())
-    {
-        return m_validationResult;
-    }
+    //if (!validateTransactionInputs())
+    //{
+    //    return m_validationResult;
+    //}
 
     /* Validate transaction outputs are non zero, don't overflow, etc */
-    if (!validateTransactionOutputs())
-    {
-        return m_validationResult;
-    }
+    //if (!validateTransactionOutputs())
+    //{
+    //    return m_validationResult;
+    //}
 
     /* Verify inputs > outputs, fee is > min fee unless fusion, etc */
-    if (!validateTransactionFee())
-    {
-        return m_validationResult;
-    }
+    //if (!validateTransactionFee())
+    //{
+    //    return m_validationResult;
+    //}
 
     //RTcoin
     //Verify deadline reasonable

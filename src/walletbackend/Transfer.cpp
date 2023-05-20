@@ -656,15 +656,22 @@ namespace SendTransaction
             totalAmount += fee.fixedFee;
         }
 
-        WalletTypes::TransactionResult txResult;
+        WalletTypes::TransactionResult txResult = {};
         txResult.transaction.version = CryptoNote::CURRENT_TRANSACTION_VERSION;
+        txResult.transaction.size = size;
+        txResult.transaction.deadline = deadline;
+        std::vector<uint8_t> garbageTmp(size, 0x55);
+        txResult.transaction.garbage.insert(txResult.transaction.garbage.end(), garbageTmp.begin(), garbageTmp.end());
+
+        std::cout << "transaction size: " << toBinaryArray(txResult.transaction).size() << std::endl;
+
         uint64_t changeRequired;
         uint64_t requiredAmount = totalAmount;
         WalletTypes::PreparedTransactionInfo txInfo;
 
         for (const auto &input : availableInputs)
         {
-            ourInputs.push_back(input);
+            ourInputs.push_back(input); 
             sumOfInputs += input.input.amount;
 
             if (sumOfInputs >= totalAmount)

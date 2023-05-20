@@ -351,6 +351,8 @@ namespace Miner
             CryptoNote::BlockMiningParameters params;
 
             params.difficulty = getUint64FromJSON(jsonBody, "difficulty");
+
+            params.isEmpty = getBoolFromJSON(jsonBody, "isEmpty");
             
             std::vector<uint8_t> blob = Common::fromHex(getStringFromJSON(jsonBody, "blob"));
 
