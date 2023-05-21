@@ -125,7 +125,13 @@ namespace Miner
             {
                 case MinerEventType::BLOCK_MINE_START:
                 {
+                    boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
+                    std::string time_str = boost::posix_time::to_simple_string(now);
+                    std::cout << "BLOCK GEN START: " << time_str << std::endl;
                     CryptoNote::BlockMiningParameters params = requestMiningParameters();
+                    now = boost::posix_time::microsec_clock::local_time();
+                    time_str = boost::posix_time::to_simple_string(now);
+                    std::cout << "GET BLOCK DONE: " << time_str << std::endl;
                     adjustBlockTemplate(params.blockTemplate);
 
                     if (!params.isEmpty)
@@ -140,6 +146,10 @@ namespace Miner
                 {
                     //stopBlockchainMonitoring();
                     
+                    boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
+                    std::string time_str = boost::posix_time::to_simple_string(now);
+                    std::cout << "BLOCK GEN DONE: " << time_str << std::endl;
+                    std::cout << "BLOCK SUBMIT" << std::endl;
                     if (submitBlock(m_minedBlock))
                     {
                         m_lastBlockTimestamp = m_minedBlock.timestamp;
@@ -152,6 +162,8 @@ namespace Miner
                         }
                     }
 
+                    /*
+
                     CryptoNote::BlockMiningParameters params = requestMiningParameters();
                     adjustBlockTemplate(params.blockTemplate);
 
@@ -162,6 +174,7 @@ namespace Miner
 
                     //startBlockchainMonitoring();
                     //startMining(params);
+                    */
                     break;
                 }
                 /*

@@ -1079,6 +1079,10 @@ std::tuple<Error, uint16_t>
 std::tuple<Error, uint16_t>
     RpcServer::submitBlock(const httplib::Request &req, httplib::Response &res, const rapidjson::Document &body)
 {
+    boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
+    std::string time_str = boost::posix_time::to_simple_string(now);
+    std::cout << "BLOCK ARRIVE TIME: " << time_str << std::endl;
+
     rapidjson::StringBuffer sb;
 
     rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
@@ -1115,6 +1119,10 @@ std::tuple<Error, uint16_t>
         newBlockMessage.current_blockchain_height = m_core->getTopBlockIndex() + 1;
 
         //RTcoin
+        now = boost::posix_time::microsec_clock::local_time();
+        time_str = boost::posix_time::to_simple_string(now);
+        std::cout << "BLOCK ADDED TO MAIN " << time_str << std::endl;
+
         m_syncManager->relayBlock(newBlockMessage);
 
         const CryptoNote::CachedBlock block(blockTemplate);

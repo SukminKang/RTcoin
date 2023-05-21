@@ -121,8 +121,8 @@ void transfer_hack(const std::shared_ptr<WalletBackend> walletBackend, const boo
 
     const bool integratedAddressesAllowed(true), cancelAllowed(true);
 
-    std::string address =
-        getAddress("What address do you want to transfer to?: ", integratedAddressesAllowed, cancelAllowed);
+    std::string address = "";
+        //getAddress("What address do you want to transfer to?: ", integratedAddressesAllowed, cancelAllowed);
 
     if (address == "cancel")
     {
@@ -136,19 +136,31 @@ void transfer_hack(const std::shared_ptr<WalletBackend> walletBackend, const boo
 
     uint64_t amount = 0;
     bool success;
-    uint64_t deadline, size;
+    uint64_t size, period, deadline;
+    int n;
 
-    std::tie(success, deadline) =
-        getDeadline("Choose the transaction deadline?: ", cancelAllowed);
+    std::cout<<"Choose the task number?: ";
+    std::cin>>n;
+    std::cout<<"\n";
 
-    std::cout << "\n";
+    for (int i = 0; i < n; i++)
+    {
+        std::cin >> size >> period >> deadline;
+        //run
+        std::thread t([walletBackend, address, amount, paymentID, sendAll, deadline, size, period](){
+            while(true) {
+                // run sendTransactionHack
+                sendTransactionHack(walletBackend, address, amount, paymentID, sendAll, deadline, size);
+                // sleep for the given period of time
+                std::this_thread::sleep_for(std::chrono::milliseconds(period));
+            }
+        });
 
-    std::tie(success, size) =
-        getSize("Choose the transaction size?: ", cancelAllowed);
+        // Detach the thread, allowing it to run independently from the main thread.
+        t.detach();
+    }
 
-    std::cout << "\n";
-
-    sendTransactionHack(walletBackend, address, amount, paymentID, sendAll, deadline, size);
+    //sendTransactionHack(walletBackend, address, amount, paymentID, sendAll, deadline, size);
 }
 
 void sendTransaction(
@@ -360,11 +372,13 @@ void sendTransactionHack(
      * the fee worked out. */
     const uint64_t actualAmount = sendAll ? unlockedBalance - nodeFee - preparedTransaction.fee : amount;
 
+    /*
     if (!confirmTransaction(walletBackend, address, actualAmount, paymentID, nodeFee, preparedTransaction.fee, deadline))         //deadline add
     {
         cancel();
         return;
     }
+    */
 
     Crypto::Hash hash;
 

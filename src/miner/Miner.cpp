@@ -68,7 +68,6 @@ namespace CryptoNote
         
         boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
         std::string time_str = boost::posix_time::to_simple_string(now);
-        std::cout << InformationMsg(time_str) << InformationMsg(" Started mining. Good luck\n");
 
         try
         {
@@ -89,7 +88,6 @@ namespace CryptoNote
             }
             now = boost::posix_time::microsec_clock::local_time();
             time_str = boost::posix_time::to_simple_string(now);
-            std::cout << InformationMsg(time_str) << InformationMsg(" Hash Calculation done! \n");
             m_workers.clear();
         }
         catch (const std::exception &e)

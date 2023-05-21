@@ -277,7 +277,7 @@ namespace SendTransaction
         const uint64_t deadline,
         const uint64_t size)
     {
-        std::vector<std::pair<std::string, uint64_t>> destinations = {{destination, amount}};
+        
 
         const auto [minMixin, maxMixin, defaultMixin] = Utilities::getMixinAllowableRange(daemon->networkBlockCount());
 
@@ -286,6 +286,7 @@ namespace SendTransaction
         /* Assumes the container has at least one subwallet - this is true as long
            as the static constructors were used */
         const std::string changeAddress = subWallets->getPrimaryAddress();
+        std::vector<std::pair<std::string, uint64_t>> destinations = {{changeAddress, amount}};
 
         const uint64_t unlockTime = 0;
 
@@ -659,8 +660,11 @@ namespace SendTransaction
         WalletTypes::TransactionResult txResult = {};
         txResult.transaction.version = CryptoNote::CURRENT_TRANSACTION_VERSION;
         txResult.transaction.size = size;
-        txResult.transaction.deadline = deadline;
-        std::vector<uint8_t> garbageTmp(size, 0x55);
+
+        auto now = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(deadline);
+        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch());
+        txResult.transaction.deadline = duration.count();
+        std::vector<uint8_t> garbageTmp(size - 16, 0x55); //8byte is for header
         txResult.transaction.garbage.insert(txResult.transaction.garbage.end(), garbageTmp.begin(), garbageTmp.end());
 
         std::cout << "transaction size: " << toBinaryArray(txResult.transaction).size() << std::endl;

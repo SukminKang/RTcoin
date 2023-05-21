@@ -40,6 +40,7 @@ namespace CryptoNote
             WRONG_TRANSACTION_UNLOCK_TIME,
             INVALID_MIXIN,
             EXTRA_TOO_LARGE,
+            DEADLINE_MISS,
             BASE_INVALID_SIGNATURES_COUNT,
             INPUT_INVALID_SIGNATURES_COUNT,
             OUTPUT_AMOUNT_TOO_LARGE,
@@ -120,6 +121,8 @@ namespace CryptoNote
                         return "Transaction has wrong unlock time";
                     case TransactionValidationError::INVALID_MIXIN:
                         return "Mixin too large or too small";
+                    case TransactionValidationError::DEADLINE_MISS:
+                        return "Transaction deadline miss";
                     case TransactionValidationError::EXTRA_TOO_LARGE:
                         return "Transaction extra too large";
                     case TransactionValidationError::BASE_INVALID_SIGNATURES_COUNT:

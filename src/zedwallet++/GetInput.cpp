@@ -59,7 +59,7 @@ std::tuple<bool, uint64_t> getDeadline(const std::string msg, const bool cancelA
     uint64_t deadline;
     std::cin>>deadline;
     auto now = std::chrono::system_clock::now();      //utc 시간 얻기  (협정 세계시)
-    now = now + std::chrono::seconds{deadline};
+    now = now + std::chrono::milliseconds{deadline};
     auto end = std::chrono::system_clock::to_time_t(now);
 
     std::cout << "The transaction deadline is " << std::ctime(&end);

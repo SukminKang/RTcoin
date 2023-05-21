@@ -69,6 +69,8 @@ class ValidateTransaction
 
     bool validateTransactionFee();
 
+    bool validateTransactionDeadline();
+
     bool validateTransactionExtra();
 
     bool validateInputOutputRatio();

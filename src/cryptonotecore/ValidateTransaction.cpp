@@ -71,6 +71,10 @@ TransactionValidationResult ValidateTransaction::validate()
 
     //RTcoin
     //Verify deadline reasonable
+    if (!validateTransactionDeadline())
+    {
+        return m_validationResult;
+    }
 
     /* Validate the transaction extra is a reasonable size. */
     if (!validateTransactionExtra())
@@ -141,7 +145,7 @@ TransactionValidationResult ValidateTransaction::revalidateAfterHeightChange()
 
 bool ValidateTransaction::validateTransactionSize()
 {
-    const auto maxTransactionSize = m_blockSizeMedian * 2 - m_currency.minerTxBlobReservedSize();
+    const size_t maxTransactionSize = 0.9 * CryptoNote::parameters::MAX_BLOCK_SIZE_INITIAL;
 
     if (m_cachedTransaction.getTransactionBinaryArray().size() > maxTransactionSize)
     {
@@ -381,6 +385,25 @@ bool ValidateTransaction::validateTransactionFee()
     }
 
     m_validationResult.fee = fee;
+
+    return true;
+}
+
+bool ValidateTransaction::validateTransactionDeadline()
+{
+    
+    auto now  = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch());
+    uint64_t current = duration.count();
+
+    if (current > m_transaction.deadline)
+    {
+        std::string error_message = "Transaction deadline miss (size: " + std::to_string(m_transaction.size) + ")";
+        setTransactionValidationResult(
+                CryptoNote::error::TransactionValidationError::DEADLINE_MISS, error_message);
+
+        return false;
+    }
 
     return true;
 }

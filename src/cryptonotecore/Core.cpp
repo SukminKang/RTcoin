@@ -1285,7 +1285,7 @@ namespace CryptoNote
             {
                 const auto hash = transaction.getTransactionHash();
 
-                logger(Logging::DEBUGGING)
+                logger(Logging::ERROR, Logging::BRIGHT_RED)
                     << "Failed to validate transaction " << hash << ": " << transactionValidationResult.errorMessage;
 
                 if (transactionPool->checkIfTransactionPresent(hash))
@@ -1306,7 +1306,8 @@ namespace CryptoNote
         auto alreadyGeneratedCoins = cache->getAlreadyGeneratedCoins(previousBlockIndex);
         auto lastBlocksSizes =
             cache->getLastBlocksSizes(currency.rewardBlocksWindow(), previousBlockIndex, addGenesisBlock);
-        auto blocksSizeMedian = Common::medianValue(lastBlocksSizes);
+        //auto blocksSizeMedian = Common::medianValue(lastBlocksSizes);
+        auto blocksSizeMedian = CryptoNote::parameters::MAX_BLOCK_SIZE_INITIAL;
 
         if (!currency.getBlockReward(
                 blockIndex,
@@ -2092,7 +2093,8 @@ namespace CryptoNote
             }
         }
 
-        size_t medianSize = calculateCumulativeBlocksizeLimit(height) / 2;
+        //size_t medianSize = calculateCumulativeBlocksizeLimit(height) / 2;
+        size_t medianSize = CryptoNote::parameters::MAX_BLOCK_SIZE_INITIAL;
 
         assert(!chainsStorage.empty());
         assert(!chainsLeaves.empty());
@@ -3048,7 +3050,8 @@ namespace CryptoNote
 
         size_t maxTotalSize = (125 * medianSize) / 100;
 
-        maxTotalSize = std::min(maxTotalSize, maxCumulativeSize) - currency.minerTxBlobReservedSize();
+        //maxTotalSize = std::min(maxTotalSize, maxCumulativeSize) - currency.minerTxBlobReservedSize();
+        maxTotalSize = CryptoNote::parameters::MAX_BLOCK_SIZE_INITIAL;
 
         TransactionSpentInputsChecker spentInputsChecker;
 
