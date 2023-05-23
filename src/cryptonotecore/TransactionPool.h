@@ -14,6 +14,7 @@
 #include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index_container.hpp>
 #include <logging/LoggerMessage.h>
 #include <logging/LoggerRef.h>
@@ -86,6 +87,10 @@ namespace CryptoNote
         {
         };
 
+        struct TransactionOrderTag
+        {
+        };
+
         typedef boost::multi_index::ordered_non_unique<
             boost::multi_index::tag<TransactionCostTag>,
             boost::multi_index::identity<PendingTransactionInfo>,
@@ -111,9 +116,18 @@ namespace CryptoNote
             PaymentIdHasher>
             PaymentIdIndex;
 
+        typedef boost::multi_index::sequenced<
+            boost::multi_index::tag<TransactionOrderTag>
+            >
+            TransactionOrderIndex;
+
         typedef boost::multi_index_container<
             PendingTransactionInfo,
-            boost::multi_index::indexed_by<TransactionHashIndex, TransactionCostIndex, PaymentIdIndex>>
+            boost::multi_index::indexed_by<
+                TransactionHashIndex,
+                TransactionCostIndex,
+                PaymentIdIndex,
+                TransactionOrderIndex>>
             TransactionsContainer;
 
         TransactionsContainer transactions;
@@ -123,6 +137,8 @@ namespace CryptoNote
         TransactionsContainer::index<TransactionCostTag>::type &transactionCostIndex;
 
         TransactionsContainer::index<PaymentIdTag>::type &paymentIdIndex;
+
+        TransactionsContainer::index<TransactionOrderTag>::type &transactionOrderIndex;
 
         mutable std::mutex m_transactionsMutex;
 

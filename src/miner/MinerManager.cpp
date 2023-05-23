@@ -116,6 +116,10 @@ namespace Miner
     void MinerManager::eventLoop()
     {
         size_t blocksMined = 0;
+        size_t blockTime = 0;
+        size_t blockCount = 0;
+        auto startTime = std::chrono::system_clock::now();
+        auto endTime = std::chrono::system_clock::now();
 
         while (true)
         {
@@ -125,13 +129,10 @@ namespace Miner
             {
                 case MinerEventType::BLOCK_MINE_START:
                 {
-                    boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
-                    std::string time_str = boost::posix_time::to_simple_string(now);
-                    std::cout << "BLOCK GEN START: " << time_str << std::endl;
-                    CryptoNote::BlockMiningParameters params = requestMiningParameters();
-                    now = boost::posix_time::microsec_clock::local_time();
-                    time_str = boost::posix_time::to_simple_string(now);
-                    std::cout << "GET BLOCK DONE: " << time_str << std::endl;
+                    std::cout << "BLOCK TIME : " << ++blockTime << std::endl;
+                    startTime = std::chrono::system_clock::now();
+                    blockCount = 0;
+                    CryptoNote::BlockMiningParameters params = requestMiningParameters(true);
                     adjustBlockTemplate(params.blockTemplate);
 
                     if (!params.isEmpty)
@@ -146,10 +147,8 @@ namespace Miner
                 {
                     //stopBlockchainMonitoring();
                     
-                    boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
-                    std::string time_str = boost::posix_time::to_simple_string(now);
-                    std::cout << "BLOCK GEN DONE: " << time_str << std::endl;
-                    std::cout << "BLOCK SUBMIT" << std::endl;
+                    endTime = std::chrono::system_clock::now();
+                    std::cout << "BLOCK GEN TIME: " << std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() << "ms" << std::endl;
                     if (submitBlock(m_minedBlock))
                     {
                         m_lastBlockTimestamp = m_minedBlock.timestamp;
@@ -157,24 +156,26 @@ namespace Miner
                         if (m_config.blocksLimit != 0 && ++blocksMined == m_config.blocksLimit)
                         {
                             std::cout << InformationMsg("Mined requested amount of blocks (")
-                                      << InformationMsg(m_config.blocksLimit) << InformationMsg("). Quitting.\n");
+                                << InformationMsg(m_config.blocksLimit) << InformationMsg("). Quitting.\n");
                             return;
                         }
-                    }
+                        
+                        blockCount++;
+                        
+                        if (blockCount < m_config.maxMultiBlock)
+                        {
+                            CryptoNote::BlockMiningParameters params = requestMiningParameters(false);
+                            adjustBlockTemplate(params.blockTemplate);
 
-                    /*
-
-                    CryptoNote::BlockMiningParameters params = requestMiningParameters();
-                    adjustBlockTemplate(params.blockTemplate);
-
-                    if (!params.isEmpty)
-                    {
-                        startMining(params);
+                            if (!params.isEmpty)
+                            {
+                                startMining(params);
+                            }
+                        }
                     }
 
                     //startBlockchainMonitoring();
                     //startMining(params);
-                    */
                     break;
                 }
                 /*
@@ -305,7 +306,7 @@ namespace Miner
         }
     }
 
-    CryptoNote::BlockMiningParameters MinerManager::requestMiningParameters()
+    CryptoNote::BlockMiningParameters MinerManager::requestMiningParameters(bool newBlockTime)
     {
         while (true)
         {
@@ -320,6 +321,12 @@ namespace Miner
 
                 writer.Key("reserveSize");
                 writer.Uint(0);
+
+                writer.Key("maxBlock");
+                writer.Uint(m_config.maxMultiBlock);
+
+                writer.Key("newBlockTime");
+                writer.Bool(newBlockTime);
             }
             writer.EndObject();
 

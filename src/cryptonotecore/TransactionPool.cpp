@@ -142,6 +142,7 @@ namespace CryptoNote
         transactionHashIndex(transactions.get<TransactionHashTag>()),
         transactionCostIndex(transactions.get<TransactionCostTag>()),
         paymentIdIndex(transactions.get<PaymentIdTag>()),
+        transactionOrderIndex(transactions.get<TransactionOrderTag>()),
         logger(logger, "TransactionPool")
     {
     }
@@ -295,6 +296,8 @@ namespace CryptoNote
 
         std::scoped_lock lock(m_transactionsMutex);
 
+        //RTcoin
+        //select EDF or FIFO here
         for (const auto &transaction : transactionCostIndex)
         {
             uint64_t transactionFee = transaction.cachedTransaction.getTransactionFee();

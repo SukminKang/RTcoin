@@ -69,6 +69,10 @@ namespace CryptoNote
             "Mine every checktime period",
             cxxopts::value<size_t>(checkTime)->default_value("12"),
             "#")(
+            "maxMultiBlock",
+            "Set max multi block count",
+            cxxopts::value<size_t>(maxMultiBlock)->default_value("8"),
+            "#")(
             "address", "The valid CryptoNote miner's address", cxxopts::value<std::string>(miningAddress), "<address>")(
             "block-timestamp-interval",
             "Timestamp incremental step for each subsequent block. May be set only if --first-block-timestamp has been "

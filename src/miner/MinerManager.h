@@ -77,7 +77,7 @@ namespace Miner
 
         bool submitBlock(const CryptoNote::BlockTemplate &minedBlock);
 
-        CryptoNote::BlockMiningParameters requestMiningParameters();
+        CryptoNote::BlockMiningParameters requestMiningParameters(bool newBlockTime);
 
         void adjustBlockTemplate(CryptoNote::BlockTemplate &blockTemplate) const;
     };

@@ -182,7 +182,9 @@ namespace CryptoNote
             const BinaryArray &extraNonce,
             uint64_t &difficulty,
             bool &isEmpty,
-            uint32_t &height) = 0;
+            uint32_t &height,
+            uint64_t &maxBlock,
+            bool &isNewBlock) = 0;
 
         virtual CoreStatistics getCoreStatistics() const = 0;
 

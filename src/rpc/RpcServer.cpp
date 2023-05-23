@@ -986,6 +986,10 @@ std::tuple<Error, uint16_t>
     rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
 
     const uint64_t reserveSize = getUint64FromJSON(body, "reserveSize");
+    uint64_t maxBlock = getUint64FromJSON(body, "maxBlock");
+    bool  newBlockTime = getBoolFromJSON(body, "newBlockTime");
+
+    std::cout << "getBlockTemplate " << maxBlock << " " << newBlockTime << std::endl;
 
     if (reserveSize > 255)
     {
@@ -1015,7 +1019,7 @@ std::tuple<Error, uint16_t>
     uint32_t height;
 
     const auto [success, error] =
-        m_core->getBlockTemplate(blockTemplate, publicViewKey, publicSpendKey, blobReserve, difficulty, isEmpty, height);
+        m_core->getBlockTemplate(blockTemplate, publicViewKey, publicSpendKey, blobReserve, difficulty, isEmpty, height, maxBlock, newBlockTime);
 
     if (!success)
     {
@@ -1079,9 +1083,7 @@ std::tuple<Error, uint16_t>
 std::tuple<Error, uint16_t>
     RpcServer::submitBlock(const httplib::Request &req, httplib::Response &res, const rapidjson::Document &body)
 {
-    boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
-    std::string time_str = boost::posix_time::to_simple_string(now);
-    std::cout << "BLOCK ARRIVE TIME: " << time_str << std::endl;
+    auto start = std::chrono::system_clock::now();
 
     rapidjson::StringBuffer sb;
 
@@ -1119,9 +1121,8 @@ std::tuple<Error, uint16_t>
         newBlockMessage.current_blockchain_height = m_core->getTopBlockIndex() + 1;
 
         //RTcoin
-        now = boost::posix_time::microsec_clock::local_time();
-        time_str = boost::posix_time::to_simple_string(now);
-        std::cout << "BLOCK ADDED TO MAIN " << time_str << std::endl;
+        auto end = std::chrono::system_clock::now();
+        std::cout << "BLOCK VAL TIME: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
 
         m_syncManager->relayBlock(newBlockMessage);
 

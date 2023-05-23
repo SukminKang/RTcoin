@@ -34,6 +34,8 @@ namespace CryptoNote
 
         size_t checkTime;
 
+        size_t maxMultiBlock;
+
         uint64_t firstBlockTimestamp;
 
         int64_t blockTimestampInterval;

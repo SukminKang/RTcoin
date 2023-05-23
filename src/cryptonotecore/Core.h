@@ -188,7 +188,9 @@ namespace CryptoNote
             const BinaryArray &extraNonce,
             uint64_t &difficulty,
             bool &isEmpty,
-            uint32_t &height) override;
+            uint32_t &height,
+            uint64_t &maxBlock,
+            bool &isNewBlock) override;
 
         virtual CoreStatistics getCoreStatistics() const override;
 
@@ -248,6 +250,8 @@ namespace CryptoNote
         std::vector<IBlockchainCache *> chainsLeaves;
 
         std::unique_ptr<ITransactionPoolCleanWrapper> transactionPool;
+
+        std::vector<std::vector<CachedTransaction>> transactionList;
 
         std::unordered_set<IBlockchainCache *> mainChainSet;
 

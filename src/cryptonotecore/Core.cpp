@@ -1975,7 +1975,9 @@ namespace CryptoNote
         const BinaryArray &extraNonce,
         uint64_t &difficulty,
         bool &isEmpty,
-        uint32_t &height)
+        uint32_t &height,
+        uint64_t &maxBlock,
+        bool &isNewBlock)
     {
         throwIfNotInitialized();
 
@@ -2005,6 +2007,8 @@ namespace CryptoNote
 
         b = boost::value_initialized<BlockTemplate>();
         b.majorVersion = getBlockMajorVersionForHeight(height);
+        b.baseTransaction.deadline = maxBlock;
+        b.baseTransaction.size = isNewBlock?1:0;
 
         if (b.majorVersion == BLOCK_MAJOR_VERSION_1)
         {
@@ -3047,16 +3051,48 @@ namespace CryptoNote
     {
         transactionsSize = 0;
         fee = 0;
+        uint64_t maxBlock = block.baseTransaction.deadline;
+        bool newBlockTime = block.baseTransaction.size;
 
-        size_t maxTotalSize = (125 * medianSize) / 100;
+        std::cout << "max block: " << maxBlock << " is it new BT? " << newBlockTime << std::endl;
 
+        //size_t maxTotalSize = (125 * medianSize) / 100;
         //maxTotalSize = std::min(maxTotalSize, maxCumulativeSize) - currency.minerTxBlobReservedSize();
-        maxTotalSize = CryptoNote::parameters::MAX_BLOCK_SIZE_INITIAL;
+        size_t maxTotalSize = CryptoNote::parameters::MAX_BLOCK_SIZE_INITIAL;
 
         TransactionSpentInputsChecker spentInputsChecker;
 
-        /* Go get our regular and fusion transactions from the transaction pool */
-        auto [regularTransactions, fusionTransactions] = transactionPool->getPoolTransactionsForBlockTemplate();
+        if (newBlockTime)
+        {
+            transactionList.clear();
+            /* Go get our regular and fusion transactions from the transaction pool */
+            auto [regularTransactions, fusionTransactions] = transactionPool->getPoolTransactionsForBlockTemplate();
+            transactionList.resize(maxBlock);
+            std::vector<int> transactionSum(maxBlock, 0);
+            int ti = 0;
+            for (auto transaction : fusionTransactions)
+            {
+                bool success = false;
+
+                for (int i = 0; i < transactionSum.size(); i++)
+                {
+                    if (transactionSum[i] + transaction.getTransactionBinaryArray().size() <= maxTotalSize)
+                    {
+                        transactionList[i].push_back(transaction);
+                        transactionSum[i] += transaction.getTransactionBinaryArray().size();
+                        success = true;
+                        std::cout << "transaction[" << ti++ << "] in block[" << i << "] size: " << transaction.getTransactionBinaryArray().size() << std::endl;
+                        break;
+                    }
+                }
+
+                if (!success)
+                {
+                    break;
+                }
+            }
+        }
+        
 
         /* Define our lambda function for checking and adding transactions to a block template */
         const auto addTransactionToBlockTemplate =
@@ -3097,7 +3133,7 @@ namespace CryptoNote
         };
 
         /* First we're going to loop through transactions that have a fee:
-           ie. the transactions that are paying to use the network */
+           ie. the transactions that are paying to use the network
         for (const auto &transaction : regularTransactions)
         {
             if (addTransactionToBlockTemplate(transaction))
@@ -3111,17 +3147,30 @@ namespace CryptoNote
                                        << " not included in block template";
             }
         }
+         */
 
         /* Then we'll loop through the fusion transactions as they don't
            pay anything to use the network */
-        for (const auto &transaction : fusionTransactions)
+
+        if (transactionList.empty())
+        {
+            std::cout << "Transaction List empty!!!!!" << std::endl;
+            return;
+        }
+
+        for (const auto &transaction : transactionList.front())
         {
             if (addTransactionToBlockTemplate(transaction))
             {
                 logger(Logging::TRACE) << "Fusion transaction " << transaction.getTransactionHash()
                                        << " included in block template";
+            } else {
+                logger(Logging::TRACE) << "Fusion Transaction " << transaction.getTransactionHash()
+                                       << " not included in block template";
             }
         }
+
+        transactionList.erase(transactionList.begin());
     }
 
     void Core::deleteAlternativeChains()
