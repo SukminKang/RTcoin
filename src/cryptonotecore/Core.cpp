@@ -3047,8 +3047,8 @@ namespace CryptoNote
         return result.valid;
     }
 
-#define LAZY
-//#undef LAZY
+//#define LAZY
+#undef LAZY
 
     void Core::fillBlockTemplate(
         BlockTemplate &block,
@@ -3166,44 +3166,47 @@ namespace CryptoNote
             
 #else
             transactionList.clear();
-            /* Go get our regular and fusion transactions from the transaction pool */
             auto [regularTransactions, fusionTransactions] = transactionPool->getPoolTransactionsForBlockTemplate();
-            transactionList.resize(maxBlock);
-            std::vector<int> transactionSum(maxBlock, 0);
-            int ti = 0;
 
-
+            int ti = -1;
+            int bi = 0;
+            bool success;
             for (auto transaction : fusionTransactions)
-            {
-                bool success = false;
-
-                for (int i = 0; i < transactionSum.size(); i++)
+            {           
+                ti++;     
+                success= false;
+                //block generate
+                bi = -1;
+                for (auto& transactions : transactionList)
                 {
-                    if (transactionSum[i] + transaction.getTransactionBinaryArray().size() <= maxTotalSize)
+                    bi++;
+                    size_t blockSize = 0;
+                    for (auto& containedTransaction : transactions)
                     {
-                        transactionList[i].push_back(transaction);
-                        transactionSum[i] += transaction.getTransactionBinaryArray().size();
+                        blockSize += containedTransaction.getTransactionBinaryArray().size();
+                    }
+                    
+                    if (blockSize + transaction.getTransactionBinaryArray().size() <= maxTotalSize)
+                    {
+                        transactions.push_back(transaction);
+                        std::cout << "T[" << ti << "] in B[" << bi++ << "]" << std::endl;
                         success = true;
-                        std::cout << "transaction[" << ti++ << "] in block[" << i << "] size: " << transaction.getTransactionBinaryArray().size() << std::endl;
                         break;
                     }
                 }
-
                 if (!success)
                 {
-                    break;
-                }
-            }
-
-            for (auto it = transactionList.begin(); it != transactionList.end();)
-            {
-                if (it->empty())
-                {
-                    it = transactionList.erase(it);
-                }
-                else
-                {
-                    ++it;
+                    if (transactionList.size() >= maxBlock)
+                    {
+                        break;
+                    }
+                    bi++;
+                    std::vector<CachedTransaction> newBlock;
+                    newBlock.push_back(transaction);
+                    transactionList.push_back(newBlock);
+                    std::cout << "NEW BLOCK GENERATE: " << transactionList.size() - 1 << std::endl;
+                    std::cout << "T[" << ti << "] in B[" << bi << "]" << std::endl;
+                    success = true;
                 }
             }
 #endif
