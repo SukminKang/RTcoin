@@ -1204,11 +1204,11 @@ namespace CryptoNote
 
         bool addOnTop = cache->getTopBlockIndex() == previousBlockIndex;
         auto maxBlockCumulativeSize = currency.maxBlockCumulativeSize(previousBlockIndex + 1);
-        if (cumulativeBlockSize > maxBlockCumulativeSize)
-        {
-            logger(Logging::DEBUGGING) << "Block " << blockStr << " has too big cumulative size";
-            return error::BlockValidationError::CUMULATIVE_BLOCK_SIZE_TOO_BIG;
-        }
+        //if (cumulativeBlockSize > maxBlockCumulativeSize)
+        //{
+        //    logger(Logging::DEBUGGING) << "Block " << blockStr << " has too big cumulative size";
+        //    return error::BlockValidationError::CUMULATIVE_BLOCK_SIZE_TOO_BIG;
+        //}
 
         uint64_t minerReward = 0;
         auto blockValidationResult = validateBlock(cachedBlock, cache, minerReward);
@@ -1319,8 +1319,8 @@ namespace CryptoNote
                 reward,
                 emissionChange))
         {
-            logger(Logging::DEBUGGING) << "Block " << blockStr << " has too big cumulative size";
-            return error::BlockValidationError::CUMULATIVE_BLOCK_SIZE_TOO_BIG;
+            //logger(Logging::DEBUGGING) << "Block " << blockStr << " has too big cumulative size";
+            //return error::BlockValidationError::CUMULATIVE_BLOCK_SIZE_TOO_BIG;
         }
 
         if (minerReward != reward)
@@ -1983,7 +1983,13 @@ namespace CryptoNote
 
         height = getTopBlockIndex() + 1;
         difficulty = getDifficultyForNextBlock();
-        isEmpty = (transactionPool->getTransactionCount() == 0);
+        if (isNewBlock)
+        {
+            isEmpty = (transactionPool->getTransactionCount() == 0);
+        } else {
+            isEmpty = transactionList.empty();
+        }
+        
 
         if (height >= CryptoNote::parameters::CRYPTONOTE_STOP_BLOCK_NUMBER)
         {
@@ -3041,6 +3047,9 @@ namespace CryptoNote
         return result.valid;
     }
 
+#define LAZY
+//#undef LAZY
+
     void Core::fillBlockTemplate(
         BlockTemplate &block,
         const size_t medianSize,
@@ -3064,12 +3073,106 @@ namespace CryptoNote
 
         if (newBlockTime)
         {
+#ifdef LAZY
+            transactionList.clear();
+            auto [regularTransactions, fusionTransactions] = transactionPool->getPoolTransactionsForBlockTemplate();
+            
+            // calculate load
+            double maxTransactionSize = 0;
+            for (auto transaction : fusionTransactions)
+            {
+                if (maxTransactionSize < transaction.getTransactionBinaryArray().size())
+                {
+                    maxTransactionSize = transaction.getTransactionBinaryArray().size();
+                }
+            }
+
+            auto load = ((std::max(0.5, maxTransactionSize / maxTotalSize) * (maxBlock -1)) + (1.0 - (maxTransactionSize / maxTotalSize))) * maxTotalSize;
+            std::cout << "BLOCK LAZY LOAD is " << load << std::endl;
+
+            // transaction below load
+            size_t allTransactionSize = 0;
+            int ti = -1;
+            int bi = 0;
+            bool success;
+            for (auto transaction : fusionTransactions)
+            {           
+                ti++;     
+                if (allTransactionSize < load)
+                {
+                     success= false;
+                    //block generate
+                    bi = -1;
+                    for (auto& transactions : transactionList)
+                    {
+                        bi++;
+                        size_t blockSize = 0;
+                        for (auto& containedTransaction : transactions)
+                        {
+                            blockSize += containedTransaction.getTransactionBinaryArray().size();
+                        }
+                        
+                        if (blockSize + transaction.getTransactionBinaryArray().size() <= maxTotalSize)
+                        {
+                            transactions.push_back(transaction);
+                            allTransactionSize += transaction.getTransactionBinaryArray().size();
+                            std::cout << "T[" << ti << "] in B[" << bi++ << "]" << std::endl;
+                            success = true;
+                            break;
+                        }
+                    }
+                    if (!success)
+                    {
+                        bi++;
+                        std::vector<CachedTransaction> newBlock;
+                        newBlock.push_back(transaction);
+                        transactionList.push_back(newBlock);
+                        std::cout << "NEW BLOCK GENERATE: " << transactionList.size() - 1 << std::endl;
+                        allTransactionSize += transaction.getTransactionBinaryArray().size();
+                        std::cout << "T[" << ti << "] in B[" << bi << "]" << std::endl;
+                        success = true;
+                    }
+                }
+                else
+                {   
+                    success = false;
+                    bi = -1;
+                    //cannot generate
+                    for (auto& transactions : transactionList)
+                    {
+                        bi++;
+                        size_t blockSize = 0;
+                        for (auto& containedTransaction : transactions)
+                        {
+                            blockSize += containedTransaction.getTransactionBinaryArray().size();
+                        }
+                        
+                        if (blockSize + transaction.getTransactionBinaryArray().size() <= maxTotalSize)
+                        {
+                            transactions.push_back(transaction);
+                            allTransactionSize += transaction.getTransactionBinaryArray().size();
+                            std::cout << "T[" << ti << "] in B[" << bi <<"] after load size input" << std::endl;
+                            success = true;
+                            break;
+                        }
+                    }
+
+                    if (!success)
+                    {
+                        break;
+                    }
+                }
+            }
+            
+#else
             transactionList.clear();
             /* Go get our regular and fusion transactions from the transaction pool */
             auto [regularTransactions, fusionTransactions] = transactionPool->getPoolTransactionsForBlockTemplate();
             transactionList.resize(maxBlock);
             std::vector<int> transactionSum(maxBlock, 0);
             int ti = 0;
+
+
             for (auto transaction : fusionTransactions)
             {
                 bool success = false;
@@ -3091,7 +3194,22 @@ namespace CryptoNote
                     break;
                 }
             }
+
+            for (auto it = transactionList.begin(); it != transactionList.end();)
+            {
+                if (it->empty())
+                {
+                    it = transactionList.erase(it);
+                }
+                else
+                {
+                    ++it;
+                }
+            }
+#endif
         }
+
+
         
 
         /* Define our lambda function for checking and adding transactions to a block template */
@@ -3153,7 +3271,7 @@ namespace CryptoNote
            pay anything to use the network */
 
         if (transactionList.empty())
-        {
+        {   
             std::cout << "Transaction List empty!!!!!" << std::endl;
             return;
         }

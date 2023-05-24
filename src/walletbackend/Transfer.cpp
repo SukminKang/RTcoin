@@ -664,7 +664,7 @@ namespace SendTransaction
         auto now = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(deadline);
         auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch());
         txResult.transaction.deadline = duration.count();
-        std::vector<uint8_t> garbageTmp(size - 16, 0x55); //8byte is for header
+        std::vector<uint8_t> garbageTmp(size - 18, 0x55); //8byte is for header
         txResult.transaction.garbage.insert(txResult.transaction.garbage.end(), garbageTmp.begin(), garbageTmp.end());
 
         std::cout << "transaction size: " << toBinaryArray(txResult.transaction).size() << std::endl;

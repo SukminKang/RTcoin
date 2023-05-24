@@ -67,7 +67,7 @@ namespace CryptoNote
             "master", "Only master can mine blocks", cxxopts::value<bool>(master)->default_value("false")->implicit_value("true"))(
             "checkTime",
             "Mine every checktime period",
-            cxxopts::value<size_t>(checkTime)->default_value("12"),
+            cxxopts::value<size_t>(checkTime)->default_value("12000"),
             "#")(
             "maxMultiBlock",
             "Set max multi block count",

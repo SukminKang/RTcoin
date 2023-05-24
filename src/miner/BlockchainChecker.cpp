@@ -29,7 +29,7 @@ void BlockchainChecker::waitBlockchainCheckerExpired()
         [this]()
         {
             System::Timer timer(m_dispatcher);
-            timer.sleep(std::chrono::seconds(m_checkingInterval));
+            timer.sleep(std::chrono::milliseconds(m_checkingInterval));
         });
 
     m_sleepingContext.wait();

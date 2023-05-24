@@ -989,8 +989,6 @@ std::tuple<Error, uint16_t>
     uint64_t maxBlock = getUint64FromJSON(body, "maxBlock");
     bool  newBlockTime = getBoolFromJSON(body, "newBlockTime");
 
-    std::cout << "getBlockTemplate " << maxBlock << " " << newBlockTime << std::endl;
-
     if (reserveSize > 255)
     {
         return {Error(API_INVALID_ARGUMENT, "Reserved size is too large, maximum permitted is 255."), 400};

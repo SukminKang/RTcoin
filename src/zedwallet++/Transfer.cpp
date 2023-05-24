@@ -136,26 +136,42 @@ void transfer_hack(const std::shared_ptr<WalletBackend> walletBackend, const boo
 
     uint64_t amount = 0;
     bool success;
-    uint64_t size, period, deadline;
+    std::vector<uint64_t> size;
+    std::vector<uint64_t> period;
+    std::vector<uint64_t> deadline;
     int n;
 
     std::cout<<"Choose the task number?: ";
     std::cin>>n;
     std::cout<<"\n";
+    for (int i = 0; i < n; i++)
+    {
+        uint64_t x,y,z;
+        std::cin >> x >> y >> z;
+        size.push_back(x);
+        period.push_back(y);
+        deadline.push_back(z);
+    }
 
     for (int i = 0; i < n; i++)
     {
-        std::cin >> size >> period >> deadline;
+        std::chrono::milliseconds duration(100); 
+        std::this_thread::sleep_for(duration);
+
+        uint64_t x,y,z;
+        x = size[i];
+        y = period[i];
+        z = deadline[i];
+
         //run
-        std::thread t([walletBackend, address, amount, paymentID, sendAll, deadline, size, period](){
+        std::thread t([walletBackend, address, amount, paymentID, sendAll, z, x, y](){
             while(true) {
                 // run sendTransactionHack
-                sendTransactionHack(walletBackend, address, amount, paymentID, sendAll, deadline, size);
+                sendTransactionHack(walletBackend, address, amount, paymentID, sendAll, z, x);
                 // sleep for the given period of time
-                std::this_thread::sleep_for(std::chrono::milliseconds(period));
+                std::this_thread::sleep_for(std::chrono::milliseconds(y));
             }
         });
-
         // Detach the thread, allowing it to run independently from the main thread.
         t.detach();
     }
