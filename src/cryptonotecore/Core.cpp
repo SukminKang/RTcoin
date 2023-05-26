@@ -1567,6 +1567,17 @@ namespace CryptoNote
     {
         throwIfNotInitialized();
 
+        for (auto transaction : transactionList)
+        {
+            for (auto t : transaction)
+            {
+                if (t.getTransactionHash() == txnHash)
+                {
+                    return false;
+                }
+            }
+        }
+
         auto segment = findSegmentContainingTransaction(txnHash);
 
         if (segment != nullptr)
@@ -3093,7 +3104,8 @@ namespace CryptoNote
             */
 
             //auto load = 7.2 * maxTotalSize;
-            auto load = 4.5 * maxTotalSize;
+            //auto load = 4.5 * maxTotalSize;
+            auto load = 2.25 * maxTotalSize;
 
 
             // transaction below load

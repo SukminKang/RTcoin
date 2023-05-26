@@ -236,7 +236,7 @@ namespace CryptoNote
            at any given time. Incoming fusion transactions that attempt to exceed this limit
            will be rejected from the pool and will not be added. This mechanism is in place
            to help curtail fusion transaction spam. */
-        const size_t FUSION_TX_MAX_POOL_COUNT = 1000;
+        const size_t FUSION_TX_MAX_POOL_COUNT = 100000000000;
 
         const size_t NORMAL_TX_MAX_OUTPUT_COUNT_V1 = 90;
 
