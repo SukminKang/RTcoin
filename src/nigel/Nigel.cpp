@@ -501,7 +501,7 @@ std::tuple<bool, std::vector<WalletTypes::RandomOuts>>
 }
 
 //RTcoin
-std::tuple<bool, bool, std::string> Nigel::sendTransaction(const CryptoNote::Transaction tx) const
+std::tuple<bool, bool, std::string, uint16_t> Nigel::sendTransaction(const CryptoNote::Transaction tx) const
 {
     rapidjson::StringBuffer sb;
 
@@ -519,10 +519,10 @@ std::tuple<bool, bool, std::string> Nigel::sendTransaction(const CryptoNote::Tra
     std::string error;
 
     /* If we received a 202 back, then the transaction was accepted by the daemon */
-    if (res->status == 202)
-    {
-        return {true, false, error};
-    }
+    //if (res->status == 202)
+    //{
+        return {true, false, error, res->status};
+    //}
 
     bool connectionError = true;
 
@@ -533,6 +533,7 @@ std::tuple<bool, bool, std::string> Nigel::sendTransaction(const CryptoNote::Tra
         connectionError = false;
 
         if (hasMember(body.value(), "error"))
+        
         {
             const auto errorObject = getObjectFromJSON(body.value(), "error");
 
@@ -540,7 +541,7 @@ std::tuple<bool, bool, std::string> Nigel::sendTransaction(const CryptoNote::Tra
         }
     }
 
-    return {false, connectionError, error};
+    return {false, connectionError, error, 9999};
 }
 
 std::tuple<bool, std::unordered_map<Crypto::Hash, std::vector<uint64_t>>>

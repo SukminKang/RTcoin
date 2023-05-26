@@ -232,6 +232,8 @@ namespace CryptoNote
 
         CryptoNote::RawBlock getRawBlock(const Crypto::Hash &blockHash) const;
 
+        uint16_t blockTime = 0;
+
       private:
         const Currency &currency;
 

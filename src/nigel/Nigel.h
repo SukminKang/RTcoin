@@ -78,7 +78,7 @@ class Nigel
         getRandomOutsByAmounts(const std::vector<uint64_t> amounts, const uint64_t requestedOuts) const;
 
     /* {success, connectionError, errorMessage} */
-    std::tuple<bool, bool, std::string> sendTransaction(const CryptoNote::Transaction tx) const;
+    std::tuple<bool, bool, std::string, uint16_t> sendTransaction(const CryptoNote::Transaction tx) const;
 
     std::tuple<bool, std::unordered_map<Crypto::Hash, std::vector<uint64_t>>>
         getGlobalIndexesForRange(const uint64_t startHeight, const uint64_t endHeight) const;

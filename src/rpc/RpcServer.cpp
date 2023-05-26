@@ -624,7 +624,7 @@ std::tuple<Error, uint16_t>
 
     if (!success)
     {
-        return {Error(API_TRANSACTION_POOL_INSERT_FAILED, error), 409};
+        return {Error(API_TRANSACTION_POOL_INSERT_FAILED, error), 9999};
     }
 
     m_syncManager->relayTransactions({transaction});
@@ -633,7 +633,7 @@ std::tuple<Error, uint16_t>
 
     res.body = sb.GetString();
 
-    return {SUCCESS, 202};
+    return {SUCCESS, m_core->blockTime};
 }
 
 std::tuple<Error, uint16_t>

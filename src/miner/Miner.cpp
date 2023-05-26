@@ -65,9 +65,9 @@ namespace CryptoNote
     {
         //std::cout << InformationMsg("Started mining for difficulty of ")
         //          << InformationMsg(blockMiningParameters.difficulty) << InformationMsg(". Good luck! ;)\n");
+
+        auto startTime  = std::chrono::system_clock::now();
         
-        boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
-        std::string time_str = boost::posix_time::to_simple_string(now);
 
         try
         {
@@ -86,8 +86,9 @@ namespace CryptoNote
 
                 blockMiningParameters.blockTemplate.nonce++;
             }
-            now = boost::posix_time::microsec_clock::local_time();
-            time_str = boost::posix_time::to_simple_string(now);
+            auto endTime  = std::chrono::system_clock::now();
+            //std::cout << "HCT: " << std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count() << "us" << std::endl;
+
             m_workers.clear();
         }
         catch (const std::exception &e)

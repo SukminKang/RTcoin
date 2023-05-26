@@ -1533,21 +1533,24 @@ namespace CryptoNote
             /* If the transaction is in the chain but somehow was not previously removed, fail */
             if (isTransactionInChain(poolTxHash))
             {
+                std::cout << __LINE__ << std::endl;
                 isValid = false;
             }
             /* If the transaction does not have the right number of mixins, fail */
             else if (!mixinSuccess)
             {
+                std::cout << __LINE__ << std::endl;
                 isValid = false;
             }
             /* If the transaction exceeds the maximum size of a transaction, fail */
-            else if (poolTx->getTransactionBinaryArray().size() > maxTransactionSize)
-            {
-                isValid = false;
-            }
+            //else if (poolTx->getTransactionBinaryArray().size() > maxTransactionSize)
+            //{
+            //    isValid = false;
+            //}
             /* If the the transaction contains outputs that were spent in the new block, fail */
             else if (hasIntersections(blockTransactionsState, poolTxState))
             {
+                std::cout << __LINE__ << std::endl;
                 isValid = false;
             }
 
@@ -1555,6 +1558,7 @@ namespace CryptoNote
                and tell everyone else that they should also remove it from the pool */
             if (!isValid)
             {
+                std::cout << __LINE__ << std::endl;
                 pool.removeTransaction(poolTxHash);
                 notifyObservers(
                     makeDelTransactionMessage({poolTxHash}, Messages::DeleteTransaction::Reason::NotActual));
@@ -3047,8 +3051,8 @@ namespace CryptoNote
         return result.valid;
     }
 
-//#define LAZY
-#undef LAZY
+#define LAZY
+//#undef LAZY
 
     void Core::fillBlockTemplate(
         BlockTemplate &block,
@@ -3076,8 +3080,9 @@ namespace CryptoNote
 #ifdef LAZY
             transactionList.clear();
             auto [regularTransactions, fusionTransactions] = transactionPool->getPoolTransactionsForBlockTemplate();
+            blockTime++;
             
-            // calculate load
+            /* calculate load
             double maxTransactionSize = 0;
             for (auto transaction : fusionTransactions)
             {
@@ -3089,6 +3094,11 @@ namespace CryptoNote
 
             auto load = ((std::max(0.5, maxTransactionSize / maxTotalSize) * (maxBlock -1)) + (1.0 - (maxTransactionSize / maxTotalSize))) * maxTotalSize;
             std::cout << "BLOCK LAZY LOAD is " << load << std::endl;
+            */
+
+            //auto load = 7.2 * maxTotalSize;
+            auto load = 4.5 * maxTotalSize;
+
 
             // transaction below load
             size_t allTransactionSize = 0;
@@ -3097,7 +3107,7 @@ namespace CryptoNote
             bool success;
             for (auto transaction : fusionTransactions)
             {           
-                ti++;     
+                ti++;
                 if (allTransactionSize < load)
                 {
                      success= false;
@@ -3116,7 +3126,7 @@ namespace CryptoNote
                         {
                             transactions.push_back(transaction);
                             allTransactionSize += transaction.getTransactionBinaryArray().size();
-                            std::cout << "T[" << ti << "] in B[" << bi++ << "]" << std::endl;
+                            std::cout << "T[" << ti << "] in B[" << bi++ << "] deadline " << transaction.getTransaction().deadline << std::endl;
                             success = true;
                             break;
                         }
@@ -3129,7 +3139,7 @@ namespace CryptoNote
                         transactionList.push_back(newBlock);
                         std::cout << "NEW BLOCK GENERATE: " << transactionList.size() - 1 << std::endl;
                         allTransactionSize += transaction.getTransactionBinaryArray().size();
-                        std::cout << "T[" << ti << "] in B[" << bi << "]" << std::endl;
+                        std::cout << "T[" << ti << "] in B[" << bi << "] deadline " << transaction.getTransaction().deadline << std::endl;
                         success = true;
                     }
                 }
@@ -3151,7 +3161,7 @@ namespace CryptoNote
                         {
                             transactions.push_back(transaction);
                             allTransactionSize += transaction.getTransactionBinaryArray().size();
-                            std::cout << "T[" << ti << "] in B[" << bi <<"] after load size input" << std::endl;
+                            std::cout << "T[" << ti << "] in B[" << bi <<"] after load size input deadline " << transaction.getTransaction().deadline << std::endl;
                             success = true;
                             break;
                         }

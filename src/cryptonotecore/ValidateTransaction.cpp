@@ -391,14 +391,9 @@ bool ValidateTransaction::validateTransactionFee()
 
 bool ValidateTransaction::validateTransactionDeadline()
 {
-    
-    auto now  = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch());
-    uint64_t current = duration.count();
-
-    if (current > m_transaction.deadline)
+    if (m_transaction.deadline == 0)
     {
-        std::string error_message = "Transaction deadline miss (size: " + std::to_string(m_transaction.size) + ")";
+        std::string error_message = "Transaction deadline ";
         setTransactionValidationResult(
                 CryptoNote::error::TransactionValidationError::DEADLINE_MISS, error_message);
 

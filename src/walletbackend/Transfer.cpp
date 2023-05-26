@@ -19,6 +19,9 @@
 
 namespace SendTransaction
 {
+
+    uint16_t blockTime = 0;
+
     std::tuple<Error, Crypto::Hash>
         sendFusionTransactionBasic(const std::shared_ptr<Nigel> daemon, const std::shared_ptr<SubWallets> subWallets)
     {
@@ -660,10 +663,8 @@ namespace SendTransaction
         WalletTypes::TransactionResult txResult = {};
         txResult.transaction.version = CryptoNote::CURRENT_TRANSACTION_VERSION;
         txResult.transaction.size = size;
+        txResult.transaction.deadline = blockTime + deadline;
 
-        auto now = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(deadline);
-        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch());
-        txResult.transaction.deadline = duration.count();
         std::vector<uint8_t> garbageTmp(size - 18, 0x55); //8byte is for header
         txResult.transaction.garbage.insert(txResult.transaction.garbage.end(), garbageTmp.begin(), garbageTmp.end());
 
@@ -1151,7 +1152,13 @@ namespace SendTransaction
     std::tuple<Error, Crypto::Hash>
         relayTransaction(const CryptoNote::Transaction tx, const std::shared_ptr<Nigel> daemon)
     {
-        const auto [success, connectionError, error] = daemon->sendTransaction(tx);
+        const auto [success, connectionError, error, bt] = daemon->sendTransaction(tx);
+
+        if (bt != 9999)
+        {
+            blockTime = bt;
+            std::cout << "NEW BT " << blockTime << std::endl;
+        }
 
         if (connectionError)
         {
