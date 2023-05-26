@@ -1533,13 +1533,11 @@ namespace CryptoNote
             /* If the transaction is in the chain but somehow was not previously removed, fail */
             if (isTransactionInChain(poolTxHash))
             {
-                std::cout << __LINE__ << std::endl;
                 isValid = false;
             }
             /* If the transaction does not have the right number of mixins, fail */
             else if (!mixinSuccess)
             {
-                std::cout << __LINE__ << std::endl;
                 isValid = false;
             }
             /* If the transaction exceeds the maximum size of a transaction, fail */
@@ -1550,7 +1548,6 @@ namespace CryptoNote
             /* If the the transaction contains outputs that were spent in the new block, fail */
             else if (hasIntersections(blockTransactionsState, poolTxState))
             {
-                std::cout << __LINE__ << std::endl;
                 isValid = false;
             }
 
@@ -1558,7 +1555,6 @@ namespace CryptoNote
                and tell everyone else that they should also remove it from the pool */
             if (!isValid)
             {
-                std::cout << __LINE__ << std::endl;
                 pool.removeTransaction(poolTxHash);
                 notifyObservers(
                     makeDelTransactionMessage({poolTxHash}, Messages::DeleteTransaction::Reason::NotActual));

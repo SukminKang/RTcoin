@@ -664,8 +664,8 @@ namespace SendTransaction
         txResult.transaction.version = CryptoNote::CURRENT_TRANSACTION_VERSION;
         txResult.transaction.size = size;
         txResult.transaction.deadline = blockTime + deadline;
-
-        std::vector<uint8_t> garbageTmp(size - 18, 0x55); //8byte is for header
+        uint8_t random = static_cast<uint8_t>(rand() % 256);
+        std::vector<uint8_t> garbageTmp(size - 18, random); //8byte is for header
         txResult.transaction.garbage.insert(txResult.transaction.garbage.end(), garbageTmp.begin(), garbageTmp.end());
 
         std::cout << "transaction size: " << toBinaryArray(txResult.transaction).size() << std::endl;

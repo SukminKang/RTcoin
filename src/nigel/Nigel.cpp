@@ -519,10 +519,10 @@ std::tuple<bool, bool, std::string, uint16_t> Nigel::sendTransaction(const Crypt
     std::string error;
 
     /* If we received a 202 back, then the transaction was accepted by the daemon */
-    //if (res->status == 202)
-    //{
+    if (res->status != 9999)
+    {
         return {true, false, error, res->status};
-    //}
+    }
 
     bool connectionError = true;
 
@@ -533,7 +533,7 @@ std::tuple<bool, bool, std::string, uint16_t> Nigel::sendTransaction(const Crypt
         connectionError = false;
 
         if (hasMember(body.value(), "error"))
-        
+
         {
             const auto errorObject = getObjectFromJSON(body.value(), "error");
 
