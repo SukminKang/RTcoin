@@ -3104,8 +3104,8 @@ namespace CryptoNote
             */
 
             //auto load = 7.2 * maxTotalSize;
-            //auto load = 4.5 * maxTotalSize;
-            auto load = 2.25 * maxTotalSize;
+            //auto load = 2.25 * maxTotalSize;
+            auto load = 100 * maxTotalSize;
 
 
             // transaction below load
@@ -3116,7 +3116,7 @@ namespace CryptoNote
             for (auto transaction : fusionTransactions)
             {           
                 ti++;
-                if (allTransactionSize < load)
+                if (allTransactionSize < load && transactionList.size() < 8)
                 {
                      success= false;
                     //block generate
@@ -3127,14 +3127,14 @@ namespace CryptoNote
                         size_t blockSize = 0;
                         for (auto& containedTransaction : transactions)
                         {
-                            blockSize += containedTransaction.getTransactionBinaryArray().size();
+                            blockSize += containedTransaction.getTransaction().size;
                         }
                         
-                        if (blockSize + transaction.getTransactionBinaryArray().size() <= maxTotalSize)
+                        if (blockSize + transaction.getTransaction().size <= maxTotalSize)
                         {
                             transactions.push_back(transaction);
-                            allTransactionSize += transaction.getTransactionBinaryArray().size();
-                            std::cout << "T[" << ti << "] in B[" << bi++ << "] deadline " << transaction.getTransaction().deadline << std::endl;
+                            allTransactionSize += transaction.getTransaction().size;
+                            std::cout << "T[" << ti << "] in B[" << bi++ << "] size " << transaction.getTransaction().size << std::endl;
                             success = true;
                             break;
                         }
@@ -3146,8 +3146,8 @@ namespace CryptoNote
                         newBlock.push_back(transaction);
                         transactionList.push_back(newBlock);
                         std::cout << "NEW BLOCK GENERATE: " << transactionList.size() - 1 << std::endl;
-                        allTransactionSize += transaction.getTransactionBinaryArray().size();
-                        std::cout << "T[" << ti << "] in B[" << bi << "] deadline " << transaction.getTransaction().deadline << std::endl;
+                        allTransactionSize += transaction.getTransaction().size;
+                        std::cout << "T[" << ti << "] in B[" << bi << "] size " << transaction.getTransaction().size << std::endl;
                         success = true;
                     }
                 }
@@ -3162,14 +3162,14 @@ namespace CryptoNote
                         size_t blockSize = 0;
                         for (auto& containedTransaction : transactions)
                         {
-                            blockSize += containedTransaction.getTransactionBinaryArray().size();
+                            blockSize += containedTransaction.getTransaction().size;
                         }
                         
-                        if (blockSize + transaction.getTransactionBinaryArray().size() <= maxTotalSize)
+                        if (blockSize + transaction.getTransaction().size <= maxTotalSize)
                         {
                             transactions.push_back(transaction);
-                            allTransactionSize += transaction.getTransactionBinaryArray().size();
-                            std::cout << "T[" << ti << "] in B[" << bi <<"] after load size input deadline " << transaction.getTransaction().deadline << std::endl;
+                            allTransactionSize += transaction.getTransaction().size;
+                            std::cout << "T[" << ti << "] in B[" << bi <<"] after load size input size " << transaction.getTransaction().size << std::endl;
                             success = true;
                             break;
                         }
@@ -3181,6 +3181,8 @@ namespace CryptoNote
                     }
                 }
             }
+
+            std::cout << "BLOCK COUNT " << transactionList.size() << std::endl;
             
 #else
             transactionList.clear();

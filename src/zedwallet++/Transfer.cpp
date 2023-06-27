@@ -155,7 +155,7 @@ void transfer_hack(const std::shared_ptr<WalletBackend> walletBackend, const boo
 
     for (int i = 0; i < n; i++)
     {
-        std::chrono::milliseconds duration(100); 
+        std::chrono::milliseconds duration(10);
         std::this_thread::sleep_for(duration);
 
         uint64_t x,y,z;
@@ -175,6 +175,8 @@ void transfer_hack(const std::shared_ptr<WalletBackend> walletBackend, const boo
         // Detach the thread, allowing it to run independently from the main thread.
         t.detach();
     }
+
+    std::this_thread::sleep_for(std::chrono::seconds(2400));
 
     //sendTransactionHack(walletBackend, address, amount, paymentID, sendAll, deadline, size);
 }

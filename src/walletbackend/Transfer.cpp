@@ -660,8 +660,10 @@ namespace SendTransaction
             totalAmount += fee.fixedFee;
         }
 
+        static uint64_t cnt = 0;
         WalletTypes::TransactionResult txResult = {};
         txResult.transaction.version = CryptoNote::CURRENT_TRANSACTION_VERSION;
+        txResult.transaction.unlockTime = cnt++;
         txResult.transaction.size = size;
         txResult.transaction.deadline = blockTime + deadline;
         uint8_t random = static_cast<uint8_t>(rand() % 256);

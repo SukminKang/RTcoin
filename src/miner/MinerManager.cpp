@@ -164,7 +164,7 @@ namespace Miner
                         
                         if (blockCount < m_config.maxMultiBlock)
                         {
-                            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                            //std::this_thread::sleep_for(std::chrono::milliseconds(100));
                             CryptoNote::BlockMiningParameters params = requestMiningParameters(false);
                             adjustBlockTemplate(params.blockTemplate);
 
