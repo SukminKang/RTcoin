@@ -298,7 +298,7 @@ namespace CryptoNote
 
         //RTcoin
         //select EDF or FIFO here
-        for (const auto &transaction : transactionOrderIndex)
+        for (const auto &transaction : transactionCostIndex)
         {
             uint64_t transactionFee = transaction.cachedTransaction.getTransactionFee();
 

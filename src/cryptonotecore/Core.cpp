@@ -3104,7 +3104,7 @@ namespace CryptoNote
             */
 
             //auto load = 7.2 * maxTotalSize;
-            //auto load = 2.25 * maxTotalSize;
+            //auto load = 4.5 * maxTotalSize;
             auto load = 100 * maxTotalSize;
 
 
